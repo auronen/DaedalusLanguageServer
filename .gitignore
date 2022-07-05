@@ -5,3 +5,5 @@
 /langserver/parser/*.tokens
 /langserver/parser/*.interp
 /antlr_parser/*.jar
+.DS_Store
+DaedalusLanguageServer_darwin
