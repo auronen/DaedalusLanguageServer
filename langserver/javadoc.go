@@ -25,12 +25,47 @@ func appendMarkdownEscaped(sb *strings.Builder, text string) {
 		sb.WriteRune(v)
 	}
 }
+
 func formatParams(sb *strings.Builder, param, desc string) {
 	sb.WriteString("- **")
 	appendMarkdownEscaped(sb, param)
 	sb.WriteString("** - *")
-	appendMarkdownEscaped(sb, desc)
-	sb.WriteString("*\n")
+
+	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
+		insts, desc := parseJavadocWithinTokens(desc, "{", "}")
+		enums, desc := parseJavadocWithinTokens(desc, "[", "]")
+		appendMarkdownEscaped(sb, desc)
+		sb.WriteString("*  \n")
+
+		if len(insts) != 0 {
+			sb.WriteString("Types: ")
+			for i := 0; i < len(insts); i++ {
+				insts[i] = "`" + insts[i] + "`"
+			}
+			sb.WriteString(strings.Join(insts, ", "))
+			sb.WriteString("\n")
+		}
+		if len(enums) != 0 {
+			sb.WriteString("Valid Values: ")
+			for i := 0; i < len(enums); i++ {
+				enums[i] = "`" + enums[i] + "`"
+			}
+			sb.WriteString(strings.Join(enums, ", "))
+			sb.WriteString("\n")
+		}
+
+	} else {
+		appendMarkdownEscaped(sb, desc)
+		sb.WriteString("*\n")
+	}
+}
+
+func cleanUpParamDesc(desc string) string {
+	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
+		_, desc = parseJavadocWithinTokens(desc, "{", "}")
+		_, desc = parseJavadocWithinTokens(desc, "[", "]")
+	}
+	return desc
 }
 
 func parseJavadocMdEscaped(sym Symbol) javadoc {
@@ -129,4 +164,45 @@ func findJavadocParam(doc, key string) string {
 	}
 
 	return ""
+}
+
+// dedupI returns a slice without any duplicates (insensitive)
+func dedupI(in []string) []string {
+	var result []string
+	for _, v := range in {
+		add := true
+		for _, existing := range result {
+			if strings.EqualFold(existing, v) {
+				add = false
+				break
+			}
+		}
+		if add {
+			result = append(result, v)
+		}
+	}
+	return result
+}
+
+func parseJavadocWithinTokens(doc, open, close string) (instances []string, remaining string) {
+
+	idxOpen := strings.Index(doc, open)
+	if idxOpen == -1 {
+		return nil, doc
+	}
+
+	idxClose := strings.Index(doc, close)
+	if idxClose == -1 || idxClose < idxOpen {
+		return nil, doc
+	}
+
+	rem := doc[idxClose+1:]
+
+	instances = strings.Split(doc[idxOpen+1:idxClose], ",")
+
+	for i := 0; i < len(instances); i++ {
+		instances[i] = strings.TrimSpace(instances[i])
+	}
+
+	return dedupI(instances), strings.TrimSpace(rem)
 }
