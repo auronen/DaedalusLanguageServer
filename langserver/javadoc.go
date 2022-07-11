@@ -31,9 +31,12 @@ func formatParams(sb *strings.Builder, param, desc string) {
 	appendMarkdownEscaped(sb, param)
 	sb.WriteString("** - *")
 
-	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
+	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") || strings.HasPrefix(desc, "<") {
 		insts, desc := parseJavadocWithinTokens(desc, "{", "}")
 		enums, desc := parseJavadocWithinTokens(desc, "[", "]")
+		// Get the function signature data
+		fnSigdata, desc := parseJavadocWithinTokens(desc, "<", ">")
+
 		appendMarkdownEscaped(sb, desc)
 		sb.WriteString("*  \n")
 
@@ -53,6 +56,17 @@ func formatParams(sb *strings.Builder, param, desc string) {
 			sb.WriteString(strings.Join(enums, ", "))
 			sb.WriteString("\n")
 		}
+		if len(fnSigdata) != 0 {
+			sb.WriteString("Required function signature: ")
+			sig, err := getFuncSignatureString(fnSigdata)
+			if err == nil {
+				// I wanted daedalus syntax highlightin here, but it does not work for me
+				sb.WriteString("`" + sig + "`")
+			} else {
+				sb.WriteString("Auronen cannot program")
+			}
+			sb.WriteString("\n")
+		}
 
 	} else {
 		appendMarkdownEscaped(sb, desc)
@@ -61,9 +75,10 @@ func formatParams(sb *strings.Builder, param, desc string) {
 }
 
 func cleanUpParamDesc(desc string) string {
-	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
+	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") || strings.HasPrefix(desc, "<") {
 		_, desc = parseJavadocWithinTokens(desc, "{", "}")
 		_, desc = parseJavadocWithinTokens(desc, "[", "]")
+		_, desc = parseJavadocWithinTokens(desc, "<", ">")
 	}
 	return desc
 }

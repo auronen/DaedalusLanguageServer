@@ -29,7 +29,7 @@ func getTypedCompletionItems(h *LspHandler, docs *parseResultsManager, symbol Fu
 	varType := symbol.Parameters[paramIndex].Type
 	docu := findJavadocParam(symbol.Documentation(), symbol.Parameters[paramIndex].Name())
 
-	if strings.HasPrefix(docu, "{") || strings.HasPrefix(docu, "[") {
+	if strings.HasPrefix(docu, "{") || strings.HasPrefix(docu, "[") || strings.HasPrefix(docu, "<") {
 		if strings.HasPrefix(docu, "{") { // if instance list directive
 			instances, _ := parseJavadocWithinTokens(docu, "{", "}")
 
@@ -50,6 +50,8 @@ func getTypedCompletionItems(h *LspHandler, docs *parseResultsManager, symbol Fu
 					sortIdx := getHighestSortIndex(result)
 					result = append(result, getDefaultC_ITEMCompletions(docs, sortIdx)...)
 				}
+
+				result = append(result, getFileLocalsByType(h, params.TextDocument.URI, params.Position, in)...)
 
 				docs.WalkGlobalSymbols(func(s Symbol) error {
 					if checkInheritance(docs, s, in) {
@@ -83,6 +85,31 @@ func getTypedCompletionItems(h *LspHandler, docs *parseResultsManager, symbol Fu
 				ci.Detail += " (enum)"
 				ci.SortText = fmt.Sprintf("%000d", localSortIndex)
 				result = append(result, ci)
+			}
+		} else if strings.HasPrefix(docu, "<") {
+			// TODO: This is very ugly, it needs refactoring
+			fnSigdata, _ := parseJavadocWithinTokens(docu, "<", ">")
+			direc := strings.Join(fnSigdata, ",")
+			fnSig, err := parseFuncSigantureDirective(direc)
+
+			// current file functions first
+			ci := getLocalFuncsWithWithSig(h, params.TextDocument.URI, params.Position, fnSig)
+			result = append(result, ci...)
+
+			if err == nil {
+				docs.WalkGlobalSymbols(func(s Symbol) error {
+					if fnSymb, ok := s.(FunctionSymbol); ok {
+						if !fnSig.isEqual(fnSymb) {
+							return nil
+						}
+						ci, err := completionItemFromSymbol(s)
+						if err != nil {
+							return nil
+						}
+						result = append(result, ci)
+					}
+					return nil
+				}, SymbolFunction)
 			}
 		}
 		return result, nil
@@ -120,6 +147,22 @@ func getTypedCompletionItems(h *LspHandler, docs *parseResultsManager, symbol Fu
 			}, types)
 
 			return result, nil
+		} else if strings.EqualFold(varType, "func") {
+			h.logger.Debugf("Func solver-> varType: %s", varType)
+
+			result = append(result, getFileLocalFuncs(h, params.TextDocument.URI, params.Position)...)
+
+			docs.WalkGlobalSymbols(func(s Symbol) error {
+				if _, ok := s.(FunctionSymbol); ok {
+					ci, err := completionItemFromSymbol(s)
+					if err != nil {
+						return nil
+					}
+					result = append(result, ci)
+				}
+				return nil
+			}, SymbolFunction)
+			return result, nil
 		} else { // it is an instance
 			ci := getLocalsAndParams(h, params.TextDocument.URI, params.Position, varType)
 			result = append(result, ci...)
@@ -131,6 +174,8 @@ func getTypedCompletionItems(h *LspHandler, docs *parseResultsManager, symbol Fu
 				sortIdx := getHighestSortIndex(result)
 				result = append(result, getDefaultC_ITEMCompletions(docs, sortIdx)...)
 			}
+
+			result = append(result, getFileLocalsByType(h, params.TextDocument.URI, params.Position, varType)...)
 
 			docs.WalkGlobalSymbols(func(s Symbol) error {
 				if checkInheritance(docs, s, varType) {
@@ -322,5 +367,80 @@ func getLocalsAndParams(h *LspHandler, docURI lsp.URI, pos lsp.Position, varType
 			break
 		}
 	}
+	return result
+}
+
+func getFileLocalFuncs(h *LspHandler, docURI lsp.URI, pos lsp.Position) []lsp.CompletionItem {
+	parsedDoc, err := h.parsedDocuments.Get(h.uriToFilename(docURI))
+	if err != nil {
+		return []lsp.CompletionItem{}
+	}
+
+	result := make([]lsp.CompletionItem, 0, 200)
+	// locally scoped variables ordered at the top
+	localSortIdx := 0
+	for _, fn := range parsedDoc.Functions {
+		ci, err := completionItemFromSymbol(fn)
+		if err != nil {
+			continue
+		}
+		localSortIdx++
+		ci.SortText = fmt.Sprintf("%000d", localSortIdx)
+
+		result = append(result, ci)
+	}
+
+	return result
+}
+
+func getFileLocalsByType(h *LspHandler, docURI lsp.URI, pos lsp.Position, typ string) []lsp.CompletionItem {
+	parsedDoc, err := h.parsedDocuments.Get(h.uriToFilename(docURI))
+	if err != nil {
+		return []lsp.CompletionItem{}
+	}
+
+	result := make([]lsp.CompletionItem, 0, 200)
+
+	localSortIdx := 0
+
+	for _, in := range parsedDoc.Instances {
+		if checkInheritance(h.parsedDocuments, in, typ) {
+			ci, err := completionItemFromSymbol(in)
+			if err != nil {
+				continue
+			}
+			localSortIdx++
+			ci.SortText = fmt.Sprintf("%000d", localSortIdx)
+
+			result = append(result, ci)
+		}
+	}
+
+	return result
+}
+
+func getLocalFuncsWithWithSig(h *LspHandler, docURI lsp.URI, pos lsp.Position, fnSig FuncSignature) []lsp.CompletionItem {
+	parsedDoc, err := h.parsedDocuments.Get(h.uriToFilename(docURI))
+	if err != nil {
+		return []lsp.CompletionItem{}
+	}
+
+	result := make([]lsp.CompletionItem, 0, 200)
+	// locally scoped variables ordered at the top
+	localSortIdx := 0
+	for _, fn := range parsedDoc.Functions {
+		if !fnSig.isEqual(fn) {
+			continue
+		}
+		ci, err := completionItemFromSymbol(fn)
+		if err != nil {
+			continue
+		}
+		localSortIdx++
+		ci.SortText = fmt.Sprintf("%000d", localSortIdx)
+
+		result = append(result, ci)
+	}
+
 	return result
 }
