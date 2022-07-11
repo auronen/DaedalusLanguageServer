@@ -38,7 +38,14 @@ func void ExitSession() {};
 func int PlayVideo(var string par0) {};
 func int PlayVideoEx(var string par0, var int par1, var int par2) {};
 func void SetPercentDone(var int par0) {};
-func void IntroduceChapter(var string par0, var string par1, var string par2, var string par3, var int par4) {};
+/// Shows new chapter image
+///
+/// @param topText usually "Chapter (chapter number)"
+/// @param bottomText usually name of the chapter
+/// @param image texture to be shown
+/// @param sound sound to be played while the new chapter image is shown
+/// @param time for how many miliseconds is it to be shown
+func void IntroduceChapter(var string topText, var string bottomText, var string image, var string sound, var int time) {};
 func void Npc_MemoryEntry(var instance par0, var int par1, var instance par2, var int par3, var instance par4) {};
 func void Npc_MemoryEntryGuild(var instance par0, var int par1, var instance par2, var int par3, var instance par4) {};
 func int Npc_hasNews(var instance par0, var int par1, var instance par2, var instance par3) {};
@@ -71,28 +78,29 @@ func int Npc_HasItems(var instance par0, var int par1) {};
 func void Npc_GiveItem(var instance par0, var int par1, var instance par2) {};
 /// Create one item in NPC's inventory
 ///
-/// @param npc target NPC
-/// @param itemInstance item to be created
+/// @param npc {c_npc} target NPC
+/// @param itemInstance {c_item} item to be created
 func void CreateInvItem(var instance npc, var int itemInstance) {};
 /// Creates specific number of items in NPC's inventory
 ///
-/// @param npc target NPC
-/// @param itemInstance item to be created
+/// @param npc {c_npc} target NPC
+/// @param itemInstance {c_item} item to be created
 func void CreateInvItems(var instance par0, var int par1, var int par2) {};
 func int Npc_GetInvItem(var c_npc self, var int itemInstance) {};
 func int Npc_GetInvItembyslot(var c_npc self, var int category, var int slotnr) {};
 /// Removes one item from NPC's inventory
 ///
 /// @param npc target NPC
-/// @param itemInstance item to be removed
-/// @return boolean: `TRUE` - removal successful, `FALSE` - removal failed
+/// @param itemInstance {c_item} item to be removed
+/// @return `TRUE` - removal successful, `FALSE` - removal failed
 func int Npc_RemoveInvItem(var C_NPC npc, var int itemInstance) {};
 /// Removes specific number of items from NPC's inventory
 ///
 /// @param npc target NPC
-/// @param itemInstance item to be removed
+/// @param itemInstance {c_item} item to be removed
 /// @param count number of items to be removed
-/// @return boolean: `TRUE` - removal successful, `FALSE` - removal failed
+///
+/// @return `TRUE` - removal successful, `FALSE` - removal failed
 func int Npc_RemoveInvItems(var C_NPC npc, var int itemInstance, var int count) {};
 func void Npc_ClearInventory(var C_NPC npc) {};
 func int Npc_IsInState(var C_NPC npc, var func par1) {};
@@ -133,8 +141,8 @@ func int Npc_GetStateTime(var instance par0) {};
 func void Npc_SetStateTime(var instance par0, var int par1) {};
 /// Plays back the dialogue with corresponidng id
 ///
-/// @param npc0 NPC saying the dialogue
-/// @param npc1 NPC listening
+/// @param npc0 {c_npc} NPC saying the dialogue
+/// @param npc1 {c_npc} NPC listening
 /// @param id string id = sound file name
 func void AI_Output(var instance npc0, var instance npc1, var string id) {};
 func void AI_OutputSvm(var instance par0, var instance par1, var string par2) {};
@@ -145,17 +153,10 @@ func void AI_Wait(var instance par0, var float par1) {};
 func void AI_WaitMs(var instance par0, var int par1) {};
 func void AI_WaitTillEnd(var instance par0, var instance par1) {};
 func void AI_AlignToWP(var instance par0) {};
-/// @slf - Target Npc  
-/// @walkMode - The Walkmode, one of the values below
-/// 
-/// Constant           | Value
-/// ---                | ---
-/// `NPC_RUN`          | 0
-/// `NPC_WALK`         | 1
-/// `NPC_SNEAK`	       | 2
-/// `NPC_RUN_WEAPON`   | 0 + 128
-/// `NPC_WALK_WEAPON`  | 1 + 128
-/// `NPC_SNEAK_WEAPON` | 2 + 128
+/// Sets NPC walk mode
+///
+/// @param slf {c_npc} target NPC  
+/// @param walkMode [NPC_RUN, NPC_WALK, NPC_SNEAK, NPC_RUN_WEAPON, NPC_WALK_WEAPON, NPC_SNEAK_WEAPON]
 func void AI_SetWalkMode(var instance slf, var int walkMode) {};
 func void AI_PlayAni(var instance par0, var string par1) {};
 func void AI_PlayAniBS(var instance par0, var string par1, var int par2) {};
@@ -204,19 +205,19 @@ func void AI_StopProcessInfos(var instance par0) {};
 func void AI_ProcessInfos(var instance par0) {};
 /// Adds a new choice to a dialogue instance
 ///
-/// @param dialogueInstance dialogue instance to attach the choices to
+/// @param dialogueInstance {C_INFO} dialogue instance to attach the choices to
 /// @param description text to be shown in the dialogue box
-/// @param function function to be run on choice selection
+/// @param function <void> function to be run on choice selection
 func void Info_AddChoice(var int dialogueInstance, var string description, var func function) {};
 /// Clears all choices attached to specified dialogue instance
 ///
-/// @param dialogueInstance this dialogue instance will have the all choices cleared 
+/// @param dialogueInstance {C_INFO} this dialogue instance will have the all choices cleared 
 func void Info_ClearChoices(var int dialogueInstance) {};
 /// Check whether NPC has heard the specified dialogue
-/// _Note: Doesn't work on `permanent` dialogues in vanilla game_
+/// _Note: Doesn't work on `permanent` dialogues in vanilla game. Fixed in Union 1.0m_
 ///
-/// @param npc NPC to check (actually not used)
-/// @param dialogueInstance C_INFO dialogue instance
+/// @param npc {c_npc} NPC to check
+/// @param dialogueInstance {C_INFO} dialogue instance
 func int Npc_KnowsInfo(var instance npc, var int dialogueInstance) {};
 func int Npc_CheckInfo(var instance par0, var int par1) {};
 func int Npc_GiveInfo(var instance par0, var int par1) {};
@@ -299,7 +300,7 @@ func int Mis_OnTime(var int par0) {};
 /// Creates a new log topic with the name `topicName` under the section `logSection`
 /// 
 /// @param topicName unique string used to identifiy and name the topic
-/// @param logSection indicates in which section to screate the topic in. Takes these constans - `LOG_MISSION`, `LOG_NOTE`
+/// @param logSection [LOG_MISSION, LOG_NOTE] indicates in which section to screate the topic in
 func void Log_CreateTopic(var string topicName, var int logSection) {};
 /// Adds an entry to a log topic with the name `topicName` under the section `logSection`
 /// 
@@ -309,7 +310,7 @@ func void Log_AddEntry(var string topicName, var string entry) {};
 /// Changes the status of the topic with the name `topicName`
 ///
 /// @param topicName unique string used to identifiy and name the topic
-/// @param status the status to be set - `LOG_RUNNING`, `LOG_SUCCESS`, `LOG_FAILED`, `LOG_OBSOLETE`
+/// @param status [LOG_RUNNING, LOG_SUCCESS, LOG_FAILED, LOG_OBSOLETE] the status to be set
 func void Log_SetTopicStatus(var string topicName, var int status) {};
 func void Mis_AddMissionEntry(var instance par0, var string par1) {};
 func void Mis_RemoveMission(var instance par0) {};
