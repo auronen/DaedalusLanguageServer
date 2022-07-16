@@ -23,6 +23,12 @@ import (
 Order of operations:
 	I think it is only needed to parse and put all the relevant data by parsing
 	in the order of the .src file
+
+	SVMs could be sorted by the order from the file
+	AI_Output - added and sorted with the relevant string literals from C_INFO instances (descriptions)
+	Other String literals - C_ITEM instances - to put the in neat files
+	String literals - the rest just dump into one big file and order them by file, then by line. Probably not needed to do anything else, majority strings are Dialogues, items, random log entires and the rest
+
 */
 
 // "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
@@ -79,8 +85,17 @@ func newCSVentryFromConstSymbol(symbol ConstantSymbol) CSVentry {
 }
 
 func (e CSVentry) getValue() []string {
-	return []string{e.location, e.source, e.target, e.id, e.fuzzy, e.context, e.translator_comments, e.developer_comments}
-} // header for the CSV files
+	return []string{e.location,
+		e.source,
+		e.target,
+		e.id,
+		e.fuzzy,
+		e.context,
+		e.translator_comments,
+		e.developer_comments}
+}
+
+// header for the CSV files
 var CSVHeader CSVentry = newCSVentry("location", "source", "target", "id", "fuzzy", "context", "translator_comments", "developer_comments", "", 0)
 
 // Returns absolute path of the git repo
