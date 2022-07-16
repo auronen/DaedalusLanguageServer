@@ -198,6 +198,17 @@ func (h *LspHandler) lookUpSymbol(documentURI string, position lsp.Position) (Sy
 	return symbol, nil
 }
 
+func (h *LspHandler) handleCommand(ctx context.Context, params *lsp.ExecuteCommandParams) error {
+	if params.Command == "daedalus.dls-hello" {
+		h.logger.Infof("Generating...")
+		h.generateConstStringCSV()
+		h.logger.Infof("Done")
+		// This should return progress
+		return nil
+	}
+	h.logger.Infof("Hello - no")
+	return fmt.Errorf("no command found")
+}
 func (h *LspHandler) handleSignatureInfo(ctx context.Context, params *lsp.TextDocumentPositionParams) (lsp.SignatureHelp, error) {
 	fnCtx, err := getFunctionCallContext(h, params.TextDocument.URI, params.Position)
 	if err != nil {
@@ -297,12 +308,28 @@ func (h *LspHandler) handleTextDocumentSignatureHelp(req RpcContext, data lsp.Te
 	return req.Reply(req.Context(), result, nil)
 }
 
+// TODO: handleExecuteCommand should control all commands (like format, check duplicate string literals and so on)
+/* or other commands related to the translations:
+preview language - checks the repo and changes all the strings to selected language temporarily, maybe use InlayHints?
+generate language scripts - generates new script base in selected language
+generate CSVs - generates language files to be translated
+*/
+func (h *LspHandler) handleExecuteCommand(req RpcContext, data lsp.ExecuteCommandParams) error {
+	err := h.handleCommand(req.Context(), &data)
+	if err != nil {
+		return req.Reply(req.Context(), nil, nil)
+	}
+	// return results/progress or some info?
+	return req.Reply(req.Context(), nil, nil)
+}
+
 func (h *LspHandler) onInitialized() {
 	h.handlers.Register(lsp.MethodTextDocumentCompletion, MakeHandler(h.handleTextDocumentCompletion))
 	h.handlers.Register(lsp.MethodTextDocumentDefinition, MakeHandler(h.handleTextDocumentDefinition))
 	h.handlers.Register(lsp.MethodTextDocumentHover, MakeHandler(h.handleTextDocumentHover))
 	h.handlers.Register(lsp.MethodTextDocumentSignatureHelp, MakeHandler(h.handleTextDocumentSignatureHelp))
 
+	h.handlers.Register(lsp.MethodWorkspaceExecuteCommand, MakeHandler(h.handleExecuteCommand))
 	// textDocument/didOpen/didSave/didChange
 	h.handlers.Register(lsp.MethodTextDocumentDidOpen, MakeHandler(h.TextDocumentSync.handleTextDocumentDidOpen))
 	h.handlers.Register(lsp.MethodTextDocumentDidChange, MakeHandler(h.TextDocumentSync.handleTextDocumentDidChange))
@@ -344,6 +371,9 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 					Save: &lsp.SaveOptions{
 						IncludeText: true,
 					},
+				},
+				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
+					Commands: []string{"daedalus.dls-hello"},
 				},
 			},
 		}, nil); err != nil {

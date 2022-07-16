@@ -136,7 +136,7 @@ func NewArrayVariableSymbol(name, varType, sizeText, source, documentation strin
 
 // String ...
 func (s VariableArraySymbol) String() string {
-	return "var " + s.Type + " " + s.Name() + "[" /* + s.ArraySizeText + ": " */ + s.ArraySizeValue + "]"
+	return "var " + s.Type + " " + s.Name() + "[" + s.ArraySizeText + ": " + s.ArraySizeValue + "]"
 }
 
 // GetType ...

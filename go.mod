@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/integralist/go-findroot v0.0.0-20160518114804-ac90681525dc
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/segmentio/encoding v0.3.4 // indirect
 	go.lsp.dev/pkg v0.0.0-20210717090340-384b27a52fb2 // indirect
