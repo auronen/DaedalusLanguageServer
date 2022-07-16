@@ -1,6 +1,9 @@
 package langserver
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Symbol ...
 type Symbol interface {
@@ -11,30 +14,20 @@ type Symbol interface {
 	String() string
 }
 
+var _ Symbol = (*FunctionSymbol)(nil)
+var _ Symbol = (*VariableSymbol)(nil)
+var _ Symbol = (*ConstantSymbol)(nil)
+var _ Symbol = (*ConstantSymbol)(nil)
+var _ Symbol = (*ConstantArraySymbol)(nil)
+var _ Symbol = (*VariableArraySymbol)(nil)
+
+// ----------------------------------------------------------------------------------------------------
+// symbolBase ...
 type symbolBase struct {
 	NameValue           string
 	SymbolSource        string
 	SymbolDocumentation string
 	SymbolDefinition    SymbolDefinition
-}
-
-var _ Symbol = (*FunctionSymbol)(nil)
-var _ Symbol = (*VariableSymbol)(nil)
-var _ Symbol = (*ConstantSymbol)(nil)
-var _ Symbol = (*ConstantSymbol)(nil)
-
-// FunctionSymbol ...
-type FunctionSymbol struct {
-	ReturnType     string
-	Parameters     []VariableSymbol
-	LocalVariables []Symbol
-	symbolBase
-	BodyDefinition SymbolDefinition
-}
-
-// GetType ...
-func (s FunctionSymbol) GetType() string {
-	return s.ReturnType
 }
 
 func newSymbolBase(name, source, doc string, def SymbolDefinition) symbolBase {
@@ -44,70 +37,6 @@ func newSymbolBase(name, source, doc string, def SymbolDefinition) symbolBase {
 		SymbolDocumentation: doc,
 		SymbolDefinition:    def,
 	}
-}
-
-// NewFunctionSymbol ...
-func NewFunctionSymbol(name, source, doc string, def SymbolDefinition, retType string, bodyDef SymbolDefinition, params []VariableSymbol, locals []Symbol) FunctionSymbol {
-	return FunctionSymbol{
-		symbolBase:     newSymbolBase(name, source, doc, def),
-		ReturnType:     retType,
-		BodyDefinition: bodyDef,
-		Parameters:     params,
-		LocalVariables: locals,
-	}
-}
-
-// NewVariableSymbol ...
-func NewVariableSymbol(name, varType, source, documentation string, definiton SymbolDefinition) VariableSymbol {
-	return VariableSymbol{
-		Type:       varType,
-		symbolBase: newSymbolBase(name, source, documentation, definiton),
-	}
-}
-
-// NewVariableSymbol ...
-func NewArrayVariableSymbol(name, varType, sizeText, source, documentation string, definiton SymbolDefinition) ArrayVariableSymbol {
-	return ArrayVariableSymbol{
-		Type:          varType,
-		ArraySizeText: sizeText,
-		symbolBase:    newSymbolBase(name, source, documentation, definiton),
-	}
-}
-
-// NewConstantSymbol ...
-func NewConstantSymbol(name, varType, source, documentation string, definiton SymbolDefinition, value string) ConstantSymbol {
-	return ConstantSymbol{
-		VariableSymbol: NewVariableSymbol(name, varType, source, documentation, definiton),
-		Value:          value,
-	}
-}
-
-// NewClassSymbol ...
-func NewClassSymbol(name, source, documentation string, definiton SymbolDefinition, bodyDef SymbolDefinition, fields []Symbol) ClassSymbol {
-	return ClassSymbol{
-		symbolBase:     newSymbolBase(name, source, documentation, definiton),
-		BodyDefinition: bodyDef,
-		Fields:         fields,
-	}
-}
-
-// NewPrototypeOrInstanceSymbol ...
-func NewPrototypeOrInstanceSymbol(name, parent, source, documentation string, definiton SymbolDefinition, bodyDef SymbolDefinition, isInstance bool) ProtoTypeOrInstanceSymbol {
-	return ProtoTypeOrInstanceSymbol{
-		Parent:         parent,
-		symbolBase:     newSymbolBase(name, source, documentation, definiton),
-		IsInstance:     isInstance,
-		BodyDefinition: bodyDef,
-	}
-}
-
-// TODO: Refactor for generics, `[]T where T: Stringer`
-func joinVars(symbols []VariableSymbol) string {
-	syms := make([]string, 0, len(symbols))
-	for _, s := range symbols {
-		syms = append(syms, s.String())
-	}
-	return strings.Join(syms, ", ")
 }
 
 // Name ...
@@ -130,15 +59,50 @@ func (s symbolBase) Definition() SymbolDefinition {
 	return s.SymbolDefinition
 }
 
+// ----------------------------------------------------------------------------------------------------
+// FunctionSymbol ...
+type FunctionSymbol struct {
+	ReturnType     string
+	Parameters     []VariableSymbol
+	LocalVariables []Symbol
+	symbolBase
+	BodyDefinition SymbolDefinition
+}
+
+// NewFunctionSymbol ...
+func NewFunctionSymbol(name, source, doc string, def SymbolDefinition, retType string, bodyDef SymbolDefinition, params []VariableSymbol, locals []Symbol) FunctionSymbol {
+	return FunctionSymbol{
+		symbolBase:     newSymbolBase(name, source, doc, def),
+		ReturnType:     retType,
+		BodyDefinition: bodyDef,
+		Parameters:     params,
+		LocalVariables: locals,
+	}
+}
+
+// GetType ...
+func (s FunctionSymbol) GetType() string {
+	return s.ReturnType
+}
+
 // String ...
 func (s FunctionSymbol) String() string {
 	return "func " + s.ReturnType + " " + s.Name() + "(" + joinVars(s.Parameters) + ")"
 }
 
+// ----------------------------------------------------------------------------------------------------
 // VariableSymbol ...
 type VariableSymbol struct {
 	Type string
 	symbolBase
+}
+
+// NewVariableSymbol ...
+func NewVariableSymbol(name, varType, source, documentation string, definiton SymbolDefinition) VariableSymbol {
+	return VariableSymbol{
+		Type:       varType,
+		symbolBase: newSymbolBase(name, source, documentation, definiton),
+	}
 }
 
 // String ...
@@ -151,27 +115,88 @@ func (s VariableSymbol) GetType() string {
 	return s.Type
 }
 
-// VariableSymbol ...
-type ArrayVariableSymbol struct {
-	Type          string
-	ArraySizeText string
+// ----------------------------------------------------------------------------------------------------
+// VariableArraySymbol ...
+type VariableArraySymbol struct {
+	Type           string
+	ArraySizeText  string
+	ArraySizeValue string
 	symbolBase
 }
 
+// NewArrayVariableSymbol ...
+func NewArrayVariableSymbol(name, varType, sizeText, source, documentation string, definiton SymbolDefinition, length string) VariableArraySymbol {
+	return VariableArraySymbol{
+		Type:           varType,
+		ArraySizeText:  sizeText,
+		ArraySizeValue: length,
+		symbolBase:     newSymbolBase(name, source, documentation, definiton),
+	}
+}
+
 // String ...
-func (s ArrayVariableSymbol) String() string {
-	return "var " + s.Type + "[" + s.ArraySizeText + "]" + " " + s.Name()
+func (s VariableArraySymbol) String() string {
+	return "var " + s.Type + " " + s.Name() + "[" /* + s.ArraySizeText + ": " */ + s.ArraySizeValue + "]"
 }
 
 // GetType ...
-func (s ArrayVariableSymbol) GetType() string {
+func (s VariableArraySymbol) GetType() string {
 	return s.Type
 }
 
+// Name ...
+func (s VariableArraySymbol) Name() string {
+	return s.NameValue
+}
+
+// Source ...
+func (s VariableArraySymbol) Source() string {
+	return s.SymbolSource
+}
+
+// Documentation ...
+func (s VariableArraySymbol) Documentation() string {
+	return s.SymbolDocumentation
+}
+
+// Definition ...
+func (s VariableArraySymbol) Definition() SymbolDefinition {
+	return s.SymbolDefinition
+}
+
+// ----------------------------------------------------------------------------------------------------
+// ArrayElement ...
+type ArrayElement struct {
+	Index      int
+	Value      string
+	Definition SymbolDefinition
+}
+
+func newArrayElement(index int, value string, definiton SymbolDefinition) ArrayElement {
+	return ArrayElement{
+		Index:      index,
+		Value:      value,
+		Definition: definiton,
+	}
+}
+
+func (el ArrayElement) GetValue() string {
+	return el.Value
+}
+
+// ----------------------------------------------------------------------------------------------------
 // ConstantSymbol ...
 type ConstantSymbol struct {
 	Value string
 	VariableSymbol
+}
+
+// NewConstantSymbol ...
+func NewConstantSymbol(name, varType, source, documentation string, definiton SymbolDefinition, value string) ConstantSymbol {
+	return ConstantSymbol{
+		VariableSymbol: NewVariableSymbol(name, varType, source, documentation, definiton),
+		Value:          value,
+	}
 }
 
 // String ...
@@ -182,6 +207,65 @@ func (s ConstantSymbol) String() string {
 // GetType ...
 func (s ConstantSymbol) GetType() string {
 	return s.Type
+}
+
+// ----------------------------------------------------------------------------------------------------
+// ConstArraySymbol ...
+type ConstantArraySymbol struct {
+	symbolBase           // base symbol
+	Type          string // type: string, int, float
+	ArraySizeText string
+	Values        []ArrayElement // values inside the array
+}
+
+// NewConstantArraySymbol ...
+func NewConstantArraySymbol(name, arrType, source, documentation string, definiton SymbolDefinition, values []ArrayElement, sizeText string) ConstantArraySymbol {
+	return ConstantArraySymbol{
+		symbolBase:    newSymbolBase(name, source, documentation, definiton),
+		Type:          arrType,
+		Values:        values,
+		ArraySizeText: sizeText,
+	}
+}
+
+// Name ...
+func (s ConstantArraySymbol) Name() string {
+	return s.NameValue
+}
+
+// Source ...
+func (s ConstantArraySymbol) Source() string {
+	return s.SymbolSource
+}
+
+// Documentation ...
+func (s ConstantArraySymbol) Documentation() string {
+	return s.SymbolDocumentation
+}
+
+// Definition ...
+func (s ConstantArraySymbol) Definition() SymbolDefinition {
+	return s.SymbolDefinition
+}
+
+// Determine const array size by the amount of values (FIXME: good method?)
+func (s ConstantArraySymbol) GetArrSize() int {
+	return len(s.Values)
+}
+
+// String ...
+func (s ConstantArraySymbol) String() string {
+	return "const " + s.Type + " " + s.Name() + "[" /* + s.ArraySizeText + ": " */ + fmt.Sprint(s.GetArrSize()) + "]" + " = " // TODO: add few elements
+}
+
+// ----------------------------------------------------------------------------------------------------
+// NewClassSymbol ...
+func NewClassSymbol(name, source, documentation string, definiton SymbolDefinition, bodyDef SymbolDefinition, fields []Symbol) ClassSymbol {
+	return ClassSymbol{
+		symbolBase:     newSymbolBase(name, source, documentation, definiton),
+		BodyDefinition: bodyDef,
+		Fields:         fields,
+	}
 }
 
 // ClassSymbol ...
@@ -196,6 +280,7 @@ func (s ClassSymbol) String() string {
 	return "class " + s.Name()
 }
 
+// ----------------------------------------------------------------------------------------------------
 // ProtoTypeOrInstanceSymbol ...
 type ProtoTypeOrInstanceSymbol struct {
 	Parent string
@@ -205,12 +290,31 @@ type ProtoTypeOrInstanceSymbol struct {
 	IsInstance     bool
 }
 
+// NewPrototypeOrInstanceSymbol ...
+func NewPrototypeOrInstanceSymbol(name, parent, source, documentation string, definiton SymbolDefinition, bodyDef SymbolDefinition, isInstance bool) ProtoTypeOrInstanceSymbol {
+	return ProtoTypeOrInstanceSymbol{
+		Parent:         parent,
+		symbolBase:     newSymbolBase(name, source, documentation, definiton),
+		IsInstance:     isInstance,
+		BodyDefinition: bodyDef,
+	}
+}
+
 // String ...
 func (s ProtoTypeOrInstanceSymbol) String() string {
 	if s.IsInstance {
 		return "instance " + s.Name() + "(" + s.Parent + ")"
 	}
 	return "prototype " + s.Name() + "(" + s.Parent + ")"
+}
+
+// TODO: Refactor for generics, `[]T where T: Stringer`
+func joinVars(symbols []VariableSymbol) string {
+	syms := make([]string, 0, len(symbols))
+	for _, s := range symbols {
+		syms = append(syms, s.String())
+	}
+	return strings.Join(syms, ", ")
 }
 
 // SymbolDefinition ...
