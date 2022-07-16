@@ -256,12 +256,10 @@ func (s ConstantArraySymbol) GetArrSize() int {
 // Generates the list of elements for hover
 func (s ConstantArraySymbol) HoverElements() string {
 	result := "{ "
-	counter := 0
 	for i, v := range s.Values {
 		if i >= 3 {
 			break
 		}
-		counter++
 		if i > 0 {
 			result += ", " + v.GetValue()
 		} else {
