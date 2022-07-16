@@ -253,9 +253,30 @@ func (s ConstantArraySymbol) GetArrSize() int {
 	return len(s.Values)
 }
 
+// Generates the list of elements for hover
+func (s ConstantArraySymbol) HoverElements() string {
+	result := "{ "
+	counter := 0
+	for i, v := range s.Values {
+		if i >= 3 {
+			break
+		}
+		counter++
+		if i > 0 {
+			result += ", " + v.GetValue()
+		} else {
+			result += v.GetValue()
+		}
+	}
+	if len(s.Values) <= 3 {
+		return result + "}"
+	}
+	return result + " ... }"
+}
+
 // String ...
 func (s ConstantArraySymbol) String() string {
-	return "const " + s.Type + " " + s.Name() + "[" /* + s.ArraySizeText + ": " */ + fmt.Sprint(s.GetArrSize()) + "]" + " = " // TODO: add few elements
+	return "const " + s.Type + " " + s.Name() + "[" /* + s.ArraySizeText + ": " */ + fmt.Sprint(s.GetArrSize()) + "]" + " = " + s.HoverElements()
 }
 
 // ----------------------------------------------------------------------------------------------------
