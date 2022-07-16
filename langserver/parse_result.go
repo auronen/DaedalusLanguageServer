@@ -6,14 +6,16 @@ import (
 
 // ParseResult ...
 type ParseResult struct {
-	Instances       map[string]ProtoTypeOrInstanceSymbol
-	GlobalVariables map[string]VariableSymbol
-	GlobalConstants map[string]ConstantSymbol
-	Functions       map[string]FunctionSymbol
-	Classes         map[string]ClassSymbol
-	Prototypes      map[string]ProtoTypeOrInstanceSymbol
-	Source          string
-	SyntaxErrors    []SyntaxError
+	Instances            map[string]ProtoTypeOrInstanceSymbol
+	GlobalVariables      map[string]VariableSymbol
+	GlobalVariableArrays map[string]VariableArraySymbol
+	GlobalConstants      map[string]ConstantSymbol
+	GlobalConstantArrays map[string]ConstantArraySymbol
+	Functions            map[string]FunctionSymbol
+	Classes              map[string]ClassSymbol
+	Prototypes           map[string]ProtoTypeOrInstanceSymbol
+	Source               string
+	SyntaxErrors         []SyntaxError
 }
 
 func (parsedDoc *ParseResult) WalkScopedVariables(di DefinitionIndex, walkFn func(Symbol) bool) {

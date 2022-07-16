@@ -12,15 +12,17 @@ import (
 // DaedalusStatefulListener ...
 type DaedalusStatefulListener struct {
 	parser.BaseDaedalusListener
-	knownSymbols    symbolWalker
-	Instances       map[string]ProtoTypeOrInstanceSymbol
-	GlobalVariables map[string]VariableSymbol
-	Functions       map[string]FunctionSymbol
-	Classes         map[string]ClassSymbol
-	Prototypes      map[string]ProtoTypeOrInstanceSymbol
-	summaryBuilder  *bytes.Buffer
-	GlobalConstants map[string]ConstantSymbol
-	source          string
+	knownSymbols         symbolWalker
+	Instances            map[string]ProtoTypeOrInstanceSymbol
+	GlobalVariables      map[string]VariableSymbol
+	GlobalVariableArrays map[string]VariableArraySymbol
+	Functions            map[string]FunctionSymbol
+	Classes              map[string]ClassSymbol
+	Prototypes           map[string]ProtoTypeOrInstanceSymbol
+	summaryBuilder       *bytes.Buffer
+	GlobalConstants      map[string]ConstantSymbol
+	GlobalConstantArrays map[string]ConstantArraySymbol
+	source               string
 }
 
 type symbolWalker interface {
@@ -31,15 +33,17 @@ type symbolWalker interface {
 // NewDaedalusStatefulListener ...
 func NewDaedalusStatefulListener(source string, knownSymbols symbolWalker) *DaedalusStatefulListener {
 	return &DaedalusStatefulListener{
-		source:          source,
-		GlobalVariables: map[string]VariableSymbol{},
-		GlobalConstants: map[string]ConstantSymbol{},
-		Functions:       map[string]FunctionSymbol{},
-		Classes:         map[string]ClassSymbol{},
-		Prototypes:      map[string]ProtoTypeOrInstanceSymbol{},
-		Instances:       map[string]ProtoTypeOrInstanceSymbol{},
-		summaryBuilder:  &bytes.Buffer{},
-		knownSymbols:    knownSymbols,
+		source:               source,
+		GlobalVariables:      map[string]VariableSymbol{},
+		GlobalVariableArrays: map[string]VariableArraySymbol{},
+		GlobalConstants:      map[string]ConstantSymbol{},
+		GlobalConstantArrays: map[string]ConstantArraySymbol{},
+		Functions:            map[string]FunctionSymbol{},
+		Classes:              map[string]ClassSymbol{},
+		Prototypes:           map[string]ProtoTypeOrInstanceSymbol{},
+		Instances:            map[string]ProtoTypeOrInstanceSymbol{},
+		summaryBuilder:       &bytes.Buffer{},
+		knownSymbols:         knownSymbols,
 	}
 }
 
@@ -105,19 +109,39 @@ func (l *DaedalusStatefulListener) variablesFromContext(v *parser.VarDeclContext
 				))
 		}
 	}
+
+	return result
+}
+
+func (l *DaedalusStatefulListener) variableArraysFromContext(v *parser.VarDeclContext) []Symbol {
+	result := []Symbol{}
+	summary := ""
+	if p, ok := v.GetParent().(*parser.InlineDefContext); ok {
+		summary = l.symbolSummaryForContext(p.AllSymbolSummary())
+	}
+
 	for _, iInnerVar := range v.AllVarArrayDecl() {
 		innerVal := iInnerVar.(*parser.VarArrayDeclContext)
 		if innerVal != nil {
 			result = append(result,
-				NewVariableSymbol(innerVal.NameNode().GetText(),
+				/*
+					NewVariableSymbol(innerVal.NameNode().GetText(),
+						v.TypeReference().GetText(),
+						l.source,
+						summary, // documentation
+						symbolDefinitionForRuleContext(innerVal.NameNode()),
+					)
+				*/
+				NewArrayVariableSymbol(innerVal.NameNode().GetText(),
 					v.TypeReference().GetText(),
+					innerVal.ArraySize().GetText(),
 					l.source,
 					summary, // documentation
 					symbolDefinitionForRuleContext(innerVal.NameNode()),
+					l.GlobalConstants[innerVal.ArraySize().GetText()].Value,
 				))
 		}
 	}
-
 	return result
 }
 
@@ -141,6 +165,66 @@ func (l *DaedalusStatefulListener) maxNOfConstValues(n int, c *parser.ConstArray
 	return result + " ... }"
 }
 
+func (l *DaedalusStatefulListener) ConstValues(c *parser.ConstArrayAssignmentContext) string {
+	result := "{ "
+	for i, v := range c.AllExpressionBlock() {
+		if i > 0 {
+			result += ", " + v.GetText()
+		} else {
+			result += v.GetText()
+		}
+	}
+	return result + " }"
+}
+
+func arrayElementsFromContext(c *parser.ConstArrayAssignmentContext) []ArrayElement {
+	result := make([]ArrayElement, 0, 66)
+	for i, v := range c.AllExpressionBlock() {
+		result = append(result, newArrayElement(
+			i,
+			v.GetText(),
+			NewSymbolDefinition(v.GetStart().GetLine(),
+				v.GetStart().GetColumn(),
+				v.GetStop().GetLine(),
+				v.GetStop().GetColumn(),
+			)))
+	}
+	return result
+}
+
+// constant arrays
+func (l *DaedalusStatefulListener) constArraysFromContext(c *parser.ConstDefContext) []Symbol {
+	result := []Symbol{}
+	summary := ""
+	if p, ok := c.GetParent().(*parser.InlineDefContext); ok {
+		summary = l.symbolSummaryForContext(p.AllSymbolSummary())
+	}
+
+	for _, iInnerVar := range c.AllConstArrayDef() {
+		innerVal := iInnerVar.(*parser.ConstArrayDefContext)
+		result = append(result,
+			/*
+				NewConstantSymbol(innerVal.NameNode().GetText(),
+					c.TypeReference().GetText(),
+					l.source,
+					summary, // documentation
+					symbolDefinitionForRuleContext(innerVal.NameNode()),
+					//	l.maxNOfConstValues(3, innerVal.ConstArrayAssignment().(*parser.ConstArrayAssignmentContext)),
+					l.ConstValues(innerVal.ConstArrayAssignment().(*parser.ConstArrayAssignmentContext)),
+				)
+			*/
+			NewConstantArraySymbol(innerVal.NameNode().GetText(), // name
+				c.TypeReference().GetText(), // array type
+				l.source,                    // source
+				summary,                     // documentation
+				symbolDefinitionForRuleContext(innerVal.NameNode()),
+				arrayElementsFromContext(innerVal.ConstArrayAssignment().(*parser.ConstArrayAssignmentContext)),
+				innerVal.ArraySize().GetText(),
+			))
+	}
+	return result
+}
+
 func (l *DaedalusStatefulListener) constsFromContext(c *parser.ConstDefContext) []Symbol {
 	result := []Symbol{}
 	summary := ""
@@ -160,18 +244,6 @@ func (l *DaedalusStatefulListener) constsFromContext(c *parser.ConstDefContext) 
 			))
 	}
 
-	for _, iInnerVar := range c.AllConstArrayDef() {
-		innerVal := iInnerVar.(*parser.ConstArrayDefContext)
-		result = append(result,
-			NewConstantSymbol(innerVal.NameNode().GetText(),
-				c.TypeReference().GetText(),
-				l.source,
-				summary, // documentation
-				symbolDefinitionForRuleContext(innerVal.NameNode()),
-				l.maxNOfConstValues(3, innerVal.ConstArrayAssignment().(*parser.ConstArrayAssignmentContext)),
-			))
-	}
-
 	return result
 }
 
@@ -187,6 +259,9 @@ func (l *DaedalusStatefulListener) EnterInlineDef(ctx *parser.InlineDefContext) 
 		for _, s := range l.constsFromContext(c) {
 			l.GlobalConstants[strings.ToUpper(s.Name())] = s.(ConstantSymbol)
 		}
+		for _, as := range l.constArraysFromContext(c) {
+			l.GlobalConstantArrays[strings.ToUpper(as.Name())] = as.(ConstantArraySymbol)
+		}
 	}
 	vars := ctx.GetTypedRuleContexts(varDeclContextType) // Does not really work somehow ...
 	for _, iv := range vars {
@@ -196,6 +271,9 @@ func (l *DaedalusStatefulListener) EnterInlineDef(ctx *parser.InlineDefContext) 
 		}
 		for _, s := range l.variablesFromContext(v) {
 			l.GlobalVariables[strings.ToUpper(s.Name())] = s.(VariableSymbol)
+		}
+		for _, as := range l.variableArraysFromContext(v) {
+			l.GlobalVariableArrays[strings.ToUpper(as.Name())] = as.(VariableArraySymbol)
 		}
 	}
 

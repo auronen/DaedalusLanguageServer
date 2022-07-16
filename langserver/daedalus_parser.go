@@ -59,14 +59,16 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 	antlr.NewParseTreeWalker().Walk(listener, p.DaedalusFile())
 
 	result := &ParseResult{
-		SyntaxErrors:    errListener.SyntaxErrors,
-		GlobalVariables: listener.GlobalVariables,
-		GlobalConstants: listener.GlobalConstants,
-		Functions:       listener.Functions,
-		Classes:         listener.Classes,
-		Prototypes:      listener.Prototypes,
-		Instances:       listener.Instances,
-		Source:          source,
+		SyntaxErrors:         errListener.SyntaxErrors,
+		GlobalVariables:      listener.GlobalVariables,
+		GlobalVariableArrays: listener.GlobalVariableArrays,
+		GlobalConstants:      listener.GlobalConstants,
+		GlobalConstantArrays: listener.GlobalConstantArrays,
+		Functions:            listener.Functions,
+		Classes:              listener.Classes,
+		Prototypes:           listener.Prototypes,
+		Instances:            listener.Instances,
+		Source:               source,
 	}
 	return result
 }
@@ -113,6 +115,10 @@ const (
 	SymbolPrototype SymbolType = 1 << 4
 	// SymbolVariable ...
 	SymbolVariable SymbolType = 1 << 5
+	// SymbolConstantArray ...
+	SymbolConstantArray SymbolType = 1 << 6
+	// SymbolConstantArray ...
+	SymbolVariableArray SymbolType = 1 << 7
 	// SymbolAll ...
 	SymbolAll SymbolType = 0xFFFFFFFF
 )
@@ -126,6 +132,11 @@ func (p *ParseResult) LookupGlobalSymbol(name string, types SymbolType) (Symbol,
 	}
 	if (types & SymbolConstant) != 0 {
 		if s, ok := p.GlobalConstants[name]; ok {
+			return s, true
+		}
+	}
+	if (types & SymbolConstantArray) != 0 {
+		if s, ok := p.GlobalConstantArrays[name]; ok {
 			return s, true
 		}
 	}
@@ -149,6 +160,11 @@ func (p *ParseResult) LookupGlobalSymbol(name string, types SymbolType) (Symbol,
 			return s, true
 		}
 	}
+	if (types & SymbolVariableArray) != 0 {
+		if s, ok := p.GlobalVariableArrays[name]; ok {
+			return s, true
+		}
+	}
 	return nil, false
 }
 
@@ -163,6 +179,13 @@ func (p *ParseResult) WalkGlobalSymbols(walkFn func(Symbol) error, types SymbolT
 	}
 	if (types & SymbolConstant) != 0 {
 		for _, s := range p.GlobalConstants {
+			if err := walkFn(s); err != nil {
+				return err
+			}
+		}
+	}
+	if (types & SymbolConstantArray) != 0 {
+		for _, s := range p.GlobalConstantArrays {
 			if err := walkFn(s); err != nil {
 				return err
 			}
@@ -191,6 +214,13 @@ func (p *ParseResult) WalkGlobalSymbols(walkFn func(Symbol) error, types SymbolT
 	}
 	if (types & SymbolVariable) != 0 {
 		for _, s := range p.GlobalVariables {
+			if err := walkFn(s); err != nil {
+				return err
+			}
+		}
+	}
+	if (types & SymbolVariableArray) != 0 {
+		for _, s := range p.GlobalVariableArrays {
 			if err := walkFn(s); err != nil {
 				return err
 			}
