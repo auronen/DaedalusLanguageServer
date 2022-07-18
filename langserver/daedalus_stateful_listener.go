@@ -2,7 +2,9 @@ package langserver
 
 import (
 	"bytes"
+	"fmt"
 	"langsrv/langserver/parser"
+	"os"
 	"reflect"
 	"strings"
 
@@ -23,6 +25,9 @@ type DaedalusStatefulListener struct {
 	GlobalConstants      map[string]ConstantSymbol
 	GlobalConstantArrays map[string]ConstantArraySymbol
 	source               string
+
+	// Dialogues
+	GlobalDialogues []Dialogue
 }
 
 type symbolWalker interface {
@@ -44,6 +49,8 @@ func NewDaedalusStatefulListener(source string, knownSymbols symbolWalker) *Daed
 		Instances:            map[string]ProtoTypeOrInstanceSymbol{},
 		summaryBuilder:       &bytes.Buffer{},
 		knownSymbols:         knownSymbols,
+
+		GlobalDialogues: []Dialogue{},
 	}
 }
 
@@ -427,4 +434,32 @@ func (l *DaedalusStatefulListener) EnterFunctionDef(ctx *parser.FunctionDefConte
 		locals)
 
 	l.Functions[strings.ToUpper(fnc.Name())] = fnc
+}
+
+func (l *DaedalusStatefulListener) findFuncCallsStatements(root antlr.Tree) []Dialogue {
+	var foundCalls []Dialogue
+	for _, s := range root.GetChildren() {
+		if funcCall, ok := s.(*parser.FuncCallContext); ok {
+			if strings.EqualFold(funcCall.NameNode().GetText(), "AI_Output") {
+				fmt.Fprintf(os.Stderr, "sound file: %s\n", funcCall.AllFuncArgExpression()[2].GetText())
+
+				if funcCall.LineComment() != nil {
+					fmt.Fprintf(os.Stderr, "txt: %s\n", strings.TrimLeft(funcCall.LineComment().GetText(), "/"))
+					foundCalls = append(foundCalls, newDialogue(funcCall.AllFuncArgExpression()[2].GetText(),
+						strings.TrimLeft(funcCall.LineComment().GetText(), "/"),
+						l.source,
+						funcCall.GetStart().GetLine()))
+				}
+
+			}
+		} else if s.GetChildCount() > 0 {
+			foundCalls = append(foundCalls, l.findFuncCallsStatements(s)...)
+		}
+	}
+	return foundCalls
+}
+
+// EnterStatementBlock ...
+func (l *DaedalusStatefulListener) EnterStatementBlock(ctx *parser.StatementBlockContext) {
+	l.GlobalDialogues = append(l.GlobalDialogues, l.findFuncCallsStatements(ctx)...)
 }

@@ -27,6 +27,12 @@ func (s *BaseDaedalusListener) EnterSymbolSummary(ctx *SymbolSummaryContext) {}
 // ExitSymbolSummary is called when production symbolSummary is exited.
 func (s *BaseDaedalusListener) ExitSymbolSummary(ctx *SymbolSummaryContext) {}
 
+// EnterLineComment is called when production lineComment is entered.
+func (s *BaseDaedalusListener) EnterLineComment(ctx *LineCommentContext) {}
+
+// ExitLineComment is called when production lineComment is exited.
+func (s *BaseDaedalusListener) ExitLineComment(ctx *LineCommentContext) {}
+
 // EnterDaedalusFile is called when production daedalusFile is entered.
 func (s *BaseDaedalusListener) EnterDaedalusFile(ctx *DaedalusFileContext) {}
 

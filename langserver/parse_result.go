@@ -16,6 +16,8 @@ type ParseResult struct {
 	Prototypes           map[string]ProtoTypeOrInstanceSymbol
 	Source               string
 	SyntaxErrors         []SyntaxError
+
+	GlobalDialogues []Dialogue
 }
 
 func (parsedDoc *ParseResult) WalkScopedVariables(di DefinitionIndex, walkFn func(Symbol) bool) {

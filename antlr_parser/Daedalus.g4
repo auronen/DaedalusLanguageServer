@@ -26,7 +26,7 @@ TooManyCommentlines : '////' ~[\r\n]* -> skip ;
 SummaryComment : DocCommentStart ~[\r\n]+;
 Newline : [\r\n] -> skip;
 BlockComment :   '/*' .*? '*/' -> skip;
-LineComment :   '//' ~[\r\n]* -> skip ;
+LineComment :   '//' ~[\r\n]*;// -> skip ;
 
 // fragments
 fragment IdStart : GermanCharacter | [a-zA-Z_];
@@ -44,8 +44,9 @@ fragment DocCommentStart : '///';
 
 //parser
 symbolSummary: SummaryComment+;
+lineComment: LineComment;
 
-daedalusFile:  (blockDef | inlineDef | symbolSummary)*? EOF;
+daedalusFile:  (blockDef | inlineDef | symbolSummary |  lineComment)*? EOF;
 blockDef : symbolSummary* (functionDef  | classDef | prototypeDef | instanceDef)';'?;
 inlineDef :  symbolSummary* (constDef | varDecl | instanceDecl )';';
 
@@ -68,9 +69,9 @@ varValueDecl: nameNode;
 
 parameterList: '(' (parameterDecl (',' parameterDecl)*? )? ')';
 parameterDecl: Var typeReference nameNode ('[' arraySize ']')?;
-statementBlock: symbolSummary* '{' ( (statement ';')  | ( ifBlockStatement ( ';' )? ) | symbolSummary )*? '}' symbolSummary*;
-statement: assignment | returnStatement | constDef | varDecl | funcCall | expression;
-funcCall: nameNode '(' ( funcArgExpression ( ',' funcArgExpression )*? )? ')';
+statementBlock: symbolSummary* '{' ( (statement)  | ( ifBlockStatement ( ';' )? ) | symbolSummary )*? '}' symbolSummary*;
+statement: assignment ';' | returnStatement ';' | constDef ';' | varDecl ';' | funcCall | expression ';';
+funcCall: nameNode '(' ( funcArgExpression ( ',' funcArgExpression )*? )? ')' ';' lineComment?;
 assignment: reference assignmentOperator expressionBlock;
 ifCondition: expressionBlock;
 elseBlock: Else statementBlock;

@@ -205,6 +205,10 @@ func (h *LspHandler) handleCommand(ctx context.Context, params *lsp.ExecuteComma
 		h.logger.Infof("Done")
 		// This should return progress
 		return nil
+	} else if params.Command == "daedalus.dialogues" {
+		h.logger.Infof("Generating dialogues")
+		h.generateDialogueCSV()
+		h.logger.Infof("Done")
 	}
 	h.logger.Infof("Hello - no")
 	return fmt.Errorf("no command found")
@@ -373,7 +377,7 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 					},
 				},
 				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
-					Commands: []string{"daedalus.dls-hello"},
+					Commands: []string{"daedalus.dls-hello", "daedalus.dialogues"},
 				},
 			},
 		}, nil); err != nil {

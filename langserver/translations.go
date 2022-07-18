@@ -84,6 +84,49 @@ func newCSVentryFromConstSymbol(symbol ConstantSymbol) CSVentry {
 	}
 }
 
+func newCSVentryFromDialogue(dia Dialogue) CSVentry {
+	// TODO: Do not ignore the error!
+	file, _ := getRepoRelativePath(dia.sourceFile)
+	return CSVentry{
+		path:       file,
+		lineNumber: dia.line,
+
+		location:            file + ":" + fmt.Sprint(dia.line),
+		source:              trimQuotes(dia.text),
+		target:              "",
+		id:                  "",
+		fuzzy:               "",
+		context:             trimQuotes(dia.soundName),
+		translator_comments: "",
+		developer_comments:  "",
+	}
+}
+
+func newCSVentryFromConstArraySymbol(sym ConstantArraySymbol) []CSVentry {
+	entries := make([]CSVentry, 0, 100)
+	file, _ := getRepoRelativePath(sym.Source())
+	parentName := sym.Name()
+	for i, el := range sym.Values {
+		lineNumber := el.Definition.Start.Line
+		line := newCSVentry(file+":"+fmt.Sprint(lineNumber),
+			trimQuotes(el.Value),
+			"",
+			"",
+			"",
+			parentName+"["+fmt.Sprint(i)+"]",
+			"",
+			"",
+			file,
+			lineNumber,
+		)
+		if line.source == "" {
+			continue
+		}
+		entries = append(entries, line /*.getValue()*/)
+	}
+	return entries
+}
+
 func (e CSVentry) getValue() []string {
 	return []string{e.location,
 		e.source,
@@ -141,6 +184,35 @@ func csvWrite(data [][]string, filename, lang string) error {
 	return nil
 }
 
+// Generates CSV containing all dialogues
+// TODO: add C_INFO.description entries
+func (h *LspHandler) generateDialogueCSV() {
+	entries := make( /*[][]string*/ []CSVentry, 0, 200)
+
+	for _, res := range h.parsedDocuments.parseResults {
+		for _, dia := range res.GlobalDialogues {
+			entries = append(entries, newCSVentryFromDialogue(dia))
+		}
+	}
+
+	// Sort entries by file and then by line (ensures comfortable translations)
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].path != entries[j].path {
+			return entries[i].path < entries[j].path
+		}
+		return entries[i].lineNumber < entries[j].lineNumber
+	})
+
+	data := make([][]string, 0, len(entries))
+	for _, l := range entries {
+		data = append(data, l.getValue())
+	}
+
+	h.logger.Infof("Got %d dialogues", len(entries))
+	csvWrite(data, "DIA", "de")
+}
+
+// Generates CSV containing all constStrings
 func (h *LspHandler) generateConstStringCSV() {
 	entries := make( /*[][]string*/ []CSVentry, 0, 200)
 	entries = append(entries, CSVHeader /*.getValue()*/) // add header
@@ -168,33 +240,12 @@ func (h *LspHandler) generateConstStringCSV() {
 		sym, ok := c.(ConstantArraySymbol)
 		if ok {
 			if strings.EqualFold(sym.Type, "string") {
-				// TODO: Do not ignore the error!
-				file, _ := getRepoRelativePath(sym.Source())
-				parentName := sym.Name()
-				for i, el := range sym.Values {
-					lineNumber := el.Definition.Start.Line
-					line := newCSVentry(file+":"+fmt.Sprint(lineNumber),
-						trimQuotes(el.Value),
-						"",
-						"",
-						"",
-						parentName+"["+fmt.Sprint(i)+"]",
-						"",
-						"",
-						file,
-						lineNumber,
-					)
-					if line.source == "" {
-						continue
-					}
-					entries = append(entries, line /*.getValue()*/)
-
-				}
+				entries = append(entries, newCSVentryFromConstArraySymbol(sym)...)
 			}
 		}
 	}
 
-	//sort.Sort(SortByLineNumber(entries))
+	// Sort entries by file and then by line (ensures comfortable translations)
 	sort.Slice(entries, func(i, j int) bool {
 		if entries[i].path != entries[j].path {
 			return entries[i].path < entries[j].path
@@ -210,3 +261,31 @@ func (h *LspHandler) generateConstStringCSV() {
 	h.logger.Infof("Got %d string constants", len(entries))
 	csvWrite(data, "Const", "de")
 }
+
+/*
+func decodeString(s string) string {
+	// the string we want to transform
+	s := "今日は"
+	fmt.Println(s)
+
+	// --- Encoding: convert s from UTF-8 to ShiftJIS
+	// declare a bytes.Buffer b and an encoder which will write into this buffer
+	var b bytes.Buffer
+	wInUTF8 := transform.NewWriter(&b, charmap.Windows1252.NewEncoder())
+	// encode our string
+	wInUTF8.Write([]byte(s))
+	wInUTF8.Close()
+	// print the encoded bytes
+	fmt.Printf("%#v\n", b)
+	encS := b.String()
+	fmt.Println(encS)
+
+	// --- Decoding: convert encS from ShiftJIS to UTF8
+	// declare a decoder which reads from the string we have just encoded
+	rInUTF8 := transform.NewReader(strings.NewReader(encS), japanese.ShiftJIS.NewDecoder())
+	// decode our string
+	decBytes, _ := ioutil.ReadAll(rInUTF8)
+	decS := string(decBytes)
+	fmt.Println(decS)
+}
+*/

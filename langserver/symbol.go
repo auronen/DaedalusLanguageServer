@@ -136,7 +136,7 @@ func NewArrayVariableSymbol(name, varType, sizeText, source, documentation strin
 
 // String ...
 func (s VariableArraySymbol) String() string {
-	return "var " + s.Type + " " + s.Name() + "[" + s.ArraySizeText + ": " + s.ArraySizeValue + "]"
+	return "var " + s.Type + " " + s.Name() + "[" /*+ s.ArraySizeText + ": " */ + s.ArraySizeValue + "]"
 }
 
 // GetType ...
@@ -215,7 +215,7 @@ type ConstantArraySymbol struct {
 	symbolBase           // base symbol
 	Type          string // type: string, int, float
 	ArraySizeText string
-	Values        []ArrayElement // values inside the array
+	Values        []ArrayElement // array elements
 }
 
 // NewConstantArraySymbol ...

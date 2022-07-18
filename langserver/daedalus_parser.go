@@ -69,6 +69,8 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 		Prototypes:           listener.Prototypes,
 		Instances:            listener.Instances,
 		Source:               source,
+
+		GlobalDialogues: listener.GlobalDialogues,
 	}
 	return result
 }
