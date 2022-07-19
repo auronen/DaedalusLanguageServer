@@ -1,4 +1,5 @@
 grammar Daedalus;
+
 // lexer
 Const : [Cc][Oo][Nn][Ss][Tt];
 Var: [Vv][Aa][Rr];
@@ -26,7 +27,7 @@ TooManyCommentlines : '////' ~[\r\n]* -> skip ;
 SummaryComment : DocCommentStart ~[\r\n]+;
 Newline : [\r\n] -> skip;
 BlockComment :   '/*' .*? '*/' -> skip;
-LineComment :   '//' ~[\r\n]*;// -> skip ;
+LineComment :   '//' ~[\r\n]* -> channel(HIDDEN);// -> skip ;
 
 // fragments
 fragment IdStart : GermanCharacter | [a-zA-Z_];
@@ -44,9 +45,8 @@ fragment DocCommentStart : '///';
 
 //parser
 symbolSummary: SummaryComment+;
-lineComment: LineComment;
 
-daedalusFile:  (blockDef | inlineDef | symbolSummary |  lineComment)*? EOF;
+daedalusFile:  (blockDef | inlineDef | symbolSummary )*? EOF;
 blockDef : symbolSummary* (functionDef  | classDef | prototypeDef | instanceDef)';'?;
 inlineDef :  symbolSummary* (constDef | varDecl | instanceDecl )';';
 
@@ -69,9 +69,9 @@ varValueDecl: nameNode;
 
 parameterList: '(' (parameterDecl (',' parameterDecl)*? )? ')';
 parameterDecl: Var typeReference nameNode ('[' arraySize ']')?;
-statementBlock: symbolSummary* '{' ( (statement)  | ( ifBlockStatement ( ';' )? ) | symbolSummary )*? '}' symbolSummary*;
-statement: assignment ';' | returnStatement ';' | constDef ';' | varDecl ';' | funcCall | expression ';';
-funcCall: nameNode '(' ( funcArgExpression ( ',' funcArgExpression )*? )? ')' ';' lineComment?;
+statementBlock: symbolSummary* '{' ( (statement ';')  | ( ifBlockStatement ( ';' )? ) | symbolSummary )*? '}' symbolSummary*;
+statement: assignment | returnStatement | constDef | varDecl | funcCall | expression ;
+funcCall: nameNode '(' ( funcArgExpression ( ',' funcArgExpression )*? )? ')';
 assignment: reference assignmentOperator expressionBlock;
 ifCondition: expressionBlock;
 elseBlock: Else statementBlock;

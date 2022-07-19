@@ -102,6 +102,23 @@ func newCSVentryFromDialogue(dia Dialogue) CSVentry {
 	}
 }
 
+func newCSVentryFromStringLiteral(s StringLiteral) CSVentry {
+	file, _ := getRepoRelativePath(s.sourceFile)
+	return CSVentry{
+		path:       file,
+		lineNumber: s.line,
+
+		location:            file + ":" + fmt.Sprint(s.line),
+		source:              trimQuotes(s.text),
+		target:              "",
+		id:                  "",
+		fuzzy:               "",
+		context:             trimQuotes(s.context),
+		translator_comments: "",
+		developer_comments:  "",
+	}
+}
+
 func newCSVentryFromConstArraySymbol(sym ConstantArraySymbol) []CSVentry {
 	entries := make([]CSVentry, 0, 100)
 	file, _ := getRepoRelativePath(sym.Source())
@@ -167,7 +184,7 @@ func csvWrite(data [][]string, filename, lang string) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.Create(filepath.Join(repoRoot, "translations", lang, filename+".csv"))
+	file, err := os.Create(filepath.Join(repoRoot, "translations", lang, filename+"_"+lang+".csv"))
 	if err != nil {
 		return err
 	}
@@ -185,13 +202,20 @@ func csvWrite(data [][]string, filename, lang string) error {
 }
 
 // Generates CSV containing all dialogues
-// TODO: add C_INFO.description entries
+// DONE: add C_INFO.description entries
 func (h *LspHandler) generateDialogueCSV() {
 	entries := make( /*[][]string*/ []CSVentry, 0, 200)
 
 	for _, res := range h.parsedDocuments.parseResults {
 		for _, dia := range res.GlobalDialogues {
+			dia.text = strings.TrimLeft(res.GlobalComments[dia.line].text, "/")
 			entries = append(entries, newCSVentryFromDialogue(dia))
+		}
+	}
+
+	for _, res := range h.parsedDocuments.parseResults {
+		for _, descr := range res.C_InfoDescriptions {
+			entries = append(entries, newCSVentryFromStringLiteral(descr))
 		}
 	}
 

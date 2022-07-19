@@ -55,7 +55,6 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 	// Use SLL prediction
 	p.Interpreter.SetPredictionMode(antlr.PredictionModeSLL)
 	listener := NewDaedalusStatefulListener(source, m)
-
 	antlr.NewParseTreeWalker().Walk(listener, p.DaedalusFile())
 
 	result := &ParseResult{
@@ -70,7 +69,9 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 		Instances:            listener.Instances,
 		Source:               source,
 
-		GlobalDialogues: listener.GlobalDialogues,
+		GlobalComments:     m.ParseComments( /* antlr.NewCommonTokenStream(lexer, 1) */ tokenStream, source),
+		GlobalDialogues:    listener.GlobalDialogues,
+		C_InfoDescriptions: listener.C_InfoDescriptions,
 	}
 	return result
 }
@@ -229,4 +230,22 @@ func (p *ParseResult) WalkGlobalSymbols(walkFn func(Symbol) error, types SymbolT
 		}
 	}
 	return nil
+}
+
+func (m *parseResultsManager) ParseComments(tokenStream *antlr.CommonTokenStream, source string) map[int]Comment {
+	commentMap := map[int]Comment{}
+	tokens := tokenStream.GetAllTokens()
+	//fmt.Fprintf(os.Stderr, "tokens: %d", len(tokens))
+	for /* i */ _, tok := range tokens {
+		// skip tokens from the main channel
+		if tok.GetChannel() == 0 {
+			continue
+		}
+		/* if i > 10 {
+			break
+		}
+		fmt.Fprintf(os.Stderr, "JOP: %s\n", tok.GetText()) */
+		commentMap[tok.GetLine()] = newCommentFromToken(tok)
+	}
+	return commentMap
 }

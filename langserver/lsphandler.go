@@ -209,6 +209,7 @@ func (h *LspHandler) handleCommand(ctx context.Context, params *lsp.ExecuteComma
 		h.logger.Infof("Generating dialogues")
 		h.generateDialogueCSV()
 		h.logger.Infof("Done")
+		return nil
 	}
 	h.logger.Infof("Hello - no")
 	return fmt.Errorf("no command found")

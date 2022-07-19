@@ -11,9 +11,6 @@ type DaedalusListener interface {
 	// EnterSymbolSummary is called when entering the symbolSummary production.
 	EnterSymbolSummary(c *SymbolSummaryContext)
 
-	// EnterLineComment is called when entering the lineComment production.
-	EnterLineComment(c *LineCommentContext)
-
 	// EnterDaedalusFile is called when entering the daedalusFile production.
 	EnterDaedalusFile(c *DaedalusFileContext)
 
@@ -223,9 +220,6 @@ type DaedalusListener interface {
 
 	// ExitSymbolSummary is called when exiting the symbolSummary production.
 	ExitSymbolSummary(c *SymbolSummaryContext)
-
-	// ExitLineComment is called when exiting the lineComment production.
-	ExitLineComment(c *LineCommentContext)
 
 	// ExitDaedalusFile is called when exiting the daedalusFile production.
 	ExitDaedalusFile(c *DaedalusFileContext)

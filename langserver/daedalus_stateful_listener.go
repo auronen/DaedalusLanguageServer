@@ -2,9 +2,7 @@ package langserver
 
 import (
 	"bytes"
-	"fmt"
 	"langsrv/langserver/parser"
-	"os"
 	"reflect"
 	"strings"
 
@@ -27,7 +25,8 @@ type DaedalusStatefulListener struct {
 	source               string
 
 	// Dialogues
-	GlobalDialogues []Dialogue
+	GlobalDialogues    []Dialogue
+	C_InfoDescriptions []StringLiteral
 }
 
 type symbolWalker interface {
@@ -50,7 +49,8 @@ func NewDaedalusStatefulListener(source string, knownSymbols symbolWalker) *Daed
 		summaryBuilder:       &bytes.Buffer{},
 		knownSymbols:         knownSymbols,
 
-		GlobalDialogues: []Dialogue{},
+		GlobalDialogues:    []Dialogue{},
+		C_InfoDescriptions: []StringLiteral{},
 	}
 }
 
@@ -441,16 +441,11 @@ func (l *DaedalusStatefulListener) findFuncCallsStatements(root antlr.Tree) []Di
 	for _, s := range root.GetChildren() {
 		if funcCall, ok := s.(*parser.FuncCallContext); ok {
 			if strings.EqualFold(funcCall.NameNode().GetText(), "AI_Output") {
-				fmt.Fprintf(os.Stderr, "sound file: %s\n", funcCall.AllFuncArgExpression()[2].GetText())
-
-				if funcCall.LineComment() != nil {
-					fmt.Fprintf(os.Stderr, "txt: %s\n", strings.TrimLeft(funcCall.LineComment().GetText(), "/"))
-					foundCalls = append(foundCalls, newDialogue(funcCall.AllFuncArgExpression()[2].GetText(),
-						strings.TrimLeft(funcCall.LineComment().GetText(), "/"),
-						l.source,
-						funcCall.GetStart().GetLine()))
-				}
-
+				//fmt.Fprintf(os.Stderr, "sound file: %s\n", funcCall.AllFuncArgExpression()[2].GetText())
+				foundCalls = append(foundCalls, newDialogue(funcCall.AllFuncArgExpression()[2].GetText(),
+					"", // filled in in the csv generation phase
+					l.source,
+					funcCall.GetStart().GetLine()))
 			}
 		} else if s.GetChildCount() > 0 {
 			foundCalls = append(foundCalls, l.findFuncCallsStatements(s)...)
@@ -462,4 +457,28 @@ func (l *DaedalusStatefulListener) findFuncCallsStatements(root antlr.Tree) []Di
 // EnterStatementBlock ...
 func (l *DaedalusStatefulListener) EnterStatementBlock(ctx *parser.StatementBlockContext) {
 	l.GlobalDialogues = append(l.GlobalDialogues, l.findFuncCallsStatements(ctx)...)
+
+	if instCtx, ok := ctx.GetParent().(*parser.InstanceDefContext); ok {
+		if strings.EqualFold(instCtx.ParentReference().GetText(), "C_INFO") {
+			for _, stmt := range ctx.AllStatement() {
+				if statement, ok := stmt.(*parser.StatementContext); ok {
+					//fmt.Fprintf(os.Stderr, "assignment: %s\n", statement.Assignment().GetText())
+					if ass, ok := statement.Assignment().(*parser.AssignmentContext); ok {
+						if strings.EqualFold(ass.Reference().GetText(), "description") {
+							if strings.Contains(ass.ExpressionBlock().GetText(), "\"") {
+								//fmt.Fprintf(os.Stderr, "description: %s\n", ass.ExpressionBlock().GetText())
+								l.C_InfoDescriptions = append(l.C_InfoDescriptions,
+									newStringLiteral(
+										ass.ExpressionBlock().GetText(),
+										l.source,
+										ass.ExpressionBlock().GetStart().GetLine(),
+										instCtx.NameNode().GetText(),
+									))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
