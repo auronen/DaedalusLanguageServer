@@ -3,6 +3,7 @@ package langserver
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -92,4 +93,19 @@ func ResolvePathsCaseInsensitive(directory, fileName string) (files []string, er
 	}
 
 	return files, nil
+}
+
+func MakePathAbsolute(relPath string) string {
+	if !strings.HasPrefix(relPath, "~/") {
+		return relPath
+	}
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+	if relPath == "~" {
+		// This will never happen (hopefully), but it is nice to be safe
+		return dir
+	} else if strings.HasPrefix(relPath, "~/") {
+		return filepath.Join(dir, relPath[2:])
+	}
+	return relPath
 }
