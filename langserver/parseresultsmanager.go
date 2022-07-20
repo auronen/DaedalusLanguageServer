@@ -202,6 +202,10 @@ func (m *parseResultsManager) resolveSrcPaths(srcFile, prefixDir string) ([]stri
 		}
 	}
 
+	for i, p := range resolvedPaths {
+		resolvedPaths[i] = MakePathAbsolute(p)
+	}
+
 	return resolvedPaths, nil
 }
 
