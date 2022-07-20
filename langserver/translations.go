@@ -184,6 +184,7 @@ func csvWrite(data [][]string, filename, lang string) error {
 	if err != nil {
 		return err
 	}
+	_ = os.MkdirAll(filepath.Join(repoRoot, "translations", lang), os.ModePerm)
 	file, err := os.Create(filepath.Join(repoRoot, "translations", lang, filename+"_"+lang+".csv"))
 	if err != nil {
 		return err
