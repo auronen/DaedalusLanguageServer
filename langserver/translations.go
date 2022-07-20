@@ -287,29 +287,81 @@ func (h *LspHandler) generateConstStringCSV() {
 }
 
 /*
-func decodeString(s string) string {
-	// the string we want to transform
-	s := "今日は"
-	fmt.Println(s)
+Ignore these externals with string literals
 
-	// --- Encoding: convert s from UTF-8 to ShiftJIS
-	// declare a bytes.Buffer b and an encoder which will write into this buffer
-	var b bytes.Buffer
-	wInUTF8 := transform.NewWriter(&b, charmap.Windows1252.NewEncoder())
-	// encode our string
-	wInUTF8.Write([]byte(s))
-	wInUTF8.Close()
-	// print the encoded bytes
-	fmt.Printf("%#v\n", b)
-	encS := b.String()
-	fmt.Println(encS)
+PrintDebug
+PrintDialog
+PrintDebugInst
+PrintDebugInstCh
+PrintDebugCh
+PrintMulti
+PlayVideo
+PlayVideoEx
+Wld_IsMobAvailable
+Wld_IsFPAvailable
+Wld_IsNextFPAvailable
+Npc_GetDisttowp
+AI_StartState
+AI_OutputSvm
+AI_OutputSvm_Overlay
+AI_PlayCutscene
+AI_PlayAni
+AI_PlayAniBS
+AI_GoToWP
+AI_Teleport
+AI_GoToFP
+Npc_IsOnFP
+AI_GoToNextFP
+Npc_StopAni
+Npc_PlayAni
+Wld_GetMobState
+AI_LookAt
+AI_PointAt
+AI_AskText
+AI_Snd_Play
+AI_Snd_Play3d
+Snd_Play
+Snd_Play3d
+Mis_AddMissionEntry
+Mdl_SetVisual
+Mdl_SetVisualBody
+Mdl_ApplyOverlayMds
+Mdl_ApplyOverlayMdsTimed
+Mdl_RemoveOverlayMds
+Mdl_ApplyRandomAni
+Mdl_ApplyRandomAniFreq
+Mdl_StartFaceAni
+Mdl_ApplyRandomFaceAni
+Wld_InsertNpc
+Wld_PlayEffect
+Wld_StopEffect
+AI_PlayFx
+AI_StopFx
+Wld_InsertNpcAndRespawn
+Wld_InsertItem
+Wld_InsertObject
+Wld_ExchangeGuildAttitudes
+Wld_SetObjectRoutine
+Wld_SetMobRoutine
+Wld_SendTrigger
+Wld_SendUntrigger
+AI_TakeMob
+AI_UseMob
+Mob_CreateItems
+Mob_HasItems
+Doc_SetPage
+Doc_SetFont
+Doc_SetLevel
+Doc_Open
+Doc_Font
+Doc_MapCoordinates
+TA
+TA_Min
+TA_Cs
+Npc_ExchangeRoutine
+RTN_Exchange
+Wld_AssignRoomToGuild
+Wld_AssignRoomToNpc
+Hlp_CutscenePlayed
 
-	// --- Decoding: convert encS from ShiftJIS to UTF8
-	// declare a decoder which reads from the string we have just encoded
-	rInUTF8 := transform.NewReader(strings.NewReader(encS), japanese.ShiftJIS.NewDecoder())
-	// decode our string
-	decBytes, _ := ioutil.ReadAll(rInUTF8)
-	decS := string(decBytes)
-	fmt.Println(decS)
-}
 */
