@@ -22,15 +22,20 @@ type parseResultsManager struct {
 	fileEncoding encoding.Encoding
 	srcEncoding  encoding.Encoding
 	decoderPool  *sync.Pool
+
+	parser           Parser
+	NumParserThreads int
 }
 
 func newParseResultsManager(logger Logger) *parseResultsManager {
 	return &parseResultsManager{
-		parseResults: make(map[string]*ParseResult),
-		logger:       logger,
-		fileEncoding: charmap.Windows1252,
-		srcEncoding:  charmap.Windows1252,
-		decoderPool:  &sync.Pool{New: func() interface{} { return charmap.Windows1252.NewDecoder() }},
+		parseResults:     make(map[string]*ParseResult),
+		logger:           logger,
+		fileEncoding:     charmap.Windows1252,
+		srcEncoding:      charmap.Windows1252,
+		decoderPool:      &sync.Pool{New: func() interface{} { return charmap.Windows1252.NewDecoder() }},
+		parser:           newRegularParser(),
+		NumParserThreads: 0,
 	}
 }
 
@@ -61,6 +66,18 @@ func (m *parseResultsManager) SetSrcEncoding(enc string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown encoding %q", enc)
+}
+
+func (m *parseResultsManager) CountSymbols() int64 {
+	m.mtx.RLock()
+	defer m.mtx.RUnlock()
+
+	n := int64(0)
+	for _, p := range m.parseResults {
+		n += p.CountSymbols()
+	}
+
+	return n
 }
 
 func (m *parseResultsManager) WalkGlobalSymbols(walkFn func(Symbol) error, types SymbolType) error {
@@ -206,8 +223,23 @@ func (m *parseResultsManager) resolveSrcPaths(srcFile, prefixDir string) ([]stri
 }
 
 var (
-	bufferPool = sync.Pool{New: func() interface{} { b := new(bytes.Buffer); b.Grow(2048); return b }}
+	bufferPool = sync.Pool{New: func() interface{} { b := new(bytes.Buffer); b.Grow(4096); return b }}
 )
+
+func (m *parseResultsManager) getConcurrency() int {
+	max := runtime.NumCPU()
+
+	if m.NumParserThreads <= max && m.NumParserThreads > 0 {
+		return m.NumParserThreads
+	}
+
+	numWorkers := max
+	if numWorkers > 2 {
+		numWorkers = numWorkers / 2
+	}
+
+	return numWorkers
+}
 
 func (m *parseResultsManager) validateFiles(resolvedPaths []string) map[string][]SyntaxError {
 	results := make(map[string][]SyntaxError)
@@ -219,10 +251,9 @@ func (m *parseResultsManager) validateFiles(resolvedPaths []string) map[string][
 	close(chanPaths)
 
 	var wg sync.WaitGroup
-	numWorkers := runtime.NumCPU()
-	if numWorkers > 2 {
-		numWorkers = numWorkers / 2
-	}
+
+	numWorkers := m.getConcurrency()
+
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go func(wg *sync.WaitGroup) {
@@ -301,10 +332,7 @@ func (m *parseResultsManager) ParseSource(srcFile string) ([]*ParseResult, error
 	close(chanPaths)
 
 	var wg sync.WaitGroup
-	numWorkers := runtime.NumCPU()
-	if numWorkers > 2 {
-		numWorkers = numWorkers / 2
-	}
+	numWorkers := m.getConcurrency()
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go func(wg *sync.WaitGroup) {
