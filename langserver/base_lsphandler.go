@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 
+	dls "github.com/kirides/DaedalusLanguageServer"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/uri"
 )
@@ -23,25 +23,11 @@ func (h *EmptyHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, req j
 type baseLspHandler struct {
 	EmptyHandler
 	conn   jsonrpc2.Conn
-	logger Logger
+	logger dls.Logger
 }
 
 func (h *baseLspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	return fmt.Errorf("%w: %s", ErrUnhandled, req.Method())
-}
-
-func replyEither(ctx context.Context, rpc RpcContext, result interface{}, err error) error {
-	if err != nil {
-		return rpc.Reply(ctx, nil, err)
-	}
-	return rpc.Reply(ctx, result, nil)
-}
-
-func (h *baseLspHandler) replyEither(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request, result interface{}, err error) error {
-	if err != nil {
-		return reply(ctx, nil, err)
-	}
-	return reply(ctx, result, nil)
 }
 
 func (h *baseLspHandler) LogDebug(format string, params ...interface{}) {
@@ -69,7 +55,7 @@ func fixURI(s string) (string, bool) {
 	return s, true
 }
 
-func (h *baseLspHandler) uriToFilename(v uri.URI) string {
+func uriToFilename(v uri.URI) string {
 	s := string(v)
 	if strings.HasPrefix(s, "git:/") {
 		return ""
@@ -77,13 +63,6 @@ func (h *baseLspHandler) uriToFilename(v uri.URI) string {
 	fixed, ok := fixURI(s)
 
 	if !ok {
-		unescaped, err := url.PathUnescape(s)
-		if err != nil {
-			h.LogWarn("Unsupported URI (not a filepath): %q\n", s)
-
-		} else {
-			h.LogWarn("Unsupported URI (not a filepath): %q\n", unescaped)
-		}
 		return ""
 	}
 	v = uri.URI(fixed)

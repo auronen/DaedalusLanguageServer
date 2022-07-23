@@ -2,8 +2,8 @@
 *.exe
 
 
-/langserver/parser/*.tokens
-/langserver/parser/*.interp
+*.tokens
+*.interp
 /antlr_parser/*.jar
 .DS_Store
 DaedalusLanguageServer_darwin

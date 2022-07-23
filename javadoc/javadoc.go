@@ -1,9 +1,11 @@
-package langserver
+package javadoc
 
 import (
 	"bufio"
 	"bytes"
 	"strings"
+
+	"github.com/kirides/DaedalusLanguageServer/daedalus/symbol"
 )
 
 var (
@@ -31,9 +33,26 @@ func formatParams(sb *strings.Builder, param, desc string) {
 	appendMarkdownEscaped(sb, param)
 	sb.WriteString("** - *")
 
-	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
-		insts, desc := parseJavadocWithinTokens(desc, "{", "}")
-		enums, desc := parseJavadocWithinTokens(desc, "[", "]")
+	const (
+		PREFIX_INST = "{"
+		PREFIX_ENUM = "["
+		PREFIX_FUNC = "<"
+
+		INST_OPEN  = PREFIX_INST
+		INST_CLOSE = "}"
+
+		ENUM_OPEN  = PREFIX_ENUM
+		ENUM_CLOSE = "]"
+
+		FUNC_OPEN  = PREFIX_FUNC
+		FUNC_CLOSE = ">"
+	)
+
+	if strings.HasPrefix(desc, PREFIX_INST) || strings.HasPrefix(desc, PREFIX_ENUM) || strings.HasPrefix(desc, PREFIX_FUNC) {
+		insts, desc := ParseWithinDedup(desc, INST_OPEN, INST_CLOSE)
+		enums, desc := ParseWithinDedup(desc, ENUM_OPEN, ENUM_CLOSE)
+		fnSigdata, desc := ParseWithin(desc, FUNC_OPEN, FUNC_CLOSE)
+
 		appendMarkdownEscaped(sb, desc)
 		sb.WriteString("*  \n")
 
@@ -53,26 +72,38 @@ func formatParams(sb *strings.Builder, param, desc string) {
 			sb.WriteString(strings.Join(enums, ", "))
 			sb.WriteString("\n")
 		}
-
+		if len(fnSigdata) != 0 {
+			sb.WriteString("Required function signature: ")
+			sig, err := getFuncSignatureString(fnSigdata)
+			if err == nil {
+				// I wanted daedalus syntax highlightin here, but it does not work for me
+				sb.WriteString("\n```daedalus\n" + sig + "\n```")
+			} else {
+				sb.WriteString("<invalid signature>")
+			}
+			sb.WriteString("\n")
+		}
 	} else {
 		appendMarkdownEscaped(sb, desc)
 		sb.WriteString("*\n")
 	}
 }
 
-func cleanUpParamDesc(desc string) string {
-	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") {
-		_, desc = parseJavadocWithinTokens(desc, "{", "}")
-		_, desc = parseJavadocWithinTokens(desc, "[", "]")
+// RemoveTokens removes all javadoc tokens from a text and makes it plain text
+func RemoveTokens(desc string) string {
+	if strings.HasPrefix(desc, "{") || strings.HasPrefix(desc, "[") || strings.HasPrefix(desc, "<") {
+		_, desc = ParseWithin(desc, "{", "}")
+		_, desc = ParseWithin(desc, "[", "]")
+		_, desc = ParseWithin(desc, "<", ">")
 	}
 	return desc
 }
 
-func parseJavadocMdEscaped(sym Symbol) javadoc {
+func parseJavadocMdEscaped(sym symbol.Symbol) javadoc {
 	r := javadoc{
 		Summary: sym.Documentation(),
 	}
-	fn, ok := sym.(FunctionSymbol)
+	fn, ok := sym.(symbol.Function)
 	if !ok {
 		return r
 	}
@@ -111,12 +142,12 @@ func parseJavadocMdEscaped(sym Symbol) javadoc {
 	return r
 }
 
-func simpleJavadocMD(sym Symbol) string {
+func MarkdownSimple(sym symbol.Symbol) string {
 	doc := parseJavadocMdEscaped(sym)
-	return javadocMD(doc)
+	return Markdown(doc)
 }
 
-func javadocMD(doc javadoc) string {
+func Markdown(doc javadoc) string {
 	sb := strings.Builder{}
 
 	sb.WriteString(doc.Summary)
@@ -147,7 +178,7 @@ func parseJavadocParam(line string) (param, desc string, ok bool) {
 	return
 }
 
-func findJavadocParam(doc, key string) string {
+func FindParam(doc, key string) string {
 	scn := bufio.NewScanner(strings.NewReader(doc))
 
 	for scn.Scan() {
@@ -184,7 +215,7 @@ func dedupI(in []string) []string {
 	return result
 }
 
-func parseJavadocWithinTokens(doc, open, close string) (instances []string, remaining string) {
+func ParseWithinDedup(doc, open, close string) (instances []string, remaining string) {
 
 	idxOpen := strings.Index(doc, open)
 	if idxOpen == -1 {
@@ -205,4 +236,26 @@ func parseJavadocWithinTokens(doc, open, close string) (instances []string, rema
 	}
 
 	return dedupI(instances), strings.TrimSpace(rem)
+}
+func ParseWithin(doc, open, close string) (instances []string, remaining string) {
+
+	idxOpen := strings.Index(doc, open)
+	if idxOpen == -1 {
+		return nil, doc
+	}
+
+	idxClose := strings.Index(doc, close)
+	if idxClose == -1 || idxClose < idxOpen {
+		return nil, doc
+	}
+
+	rem := doc[idxClose+1:]
+
+	instances = strings.Split(doc[idxOpen+1:idxClose], ",")
+
+	for i := 0; i < len(instances); i++ {
+		instances[i] = strings.TrimSpace(instances[i])
+	}
+
+	return instances, strings.TrimSpace(rem)
 }

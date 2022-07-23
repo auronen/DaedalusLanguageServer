@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	dls "github.com/kirides/DaedalusLanguageServer"
+	"github.com/kirides/DaedalusLanguageServer/daedalus/symbol"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 )
@@ -18,7 +20,7 @@ import (
 type parseResultsManager struct {
 	parseResults map[string]*ParseResult
 	mtx          sync.RWMutex
-	logger       Logger
+	logger       dls.Logger
 
 	fileEncoding encoding.Encoding
 	srcEncoding  encoding.Encoding
@@ -28,7 +30,7 @@ type parseResultsManager struct {
 	NumParserThreads int
 }
 
-func newParseResultsManager(logger Logger) *parseResultsManager {
+func newParseResultsManager(logger dls.Logger) *parseResultsManager {
 	return &parseResultsManager{
 		parseResults:     make(map[string]*ParseResult),
 		logger:           logger,
@@ -81,12 +83,12 @@ func (m *parseResultsManager) CountSymbols() int64 {
 	return n
 }
 
-func (m *parseResultsManager) WalkGlobalSymbols(walkFn func(Symbol) error, types SymbolType) error {
+func (m *parseResultsManager) WalkGlobalSymbols(walkFn func(symbol.Symbol) error, types SymbolType) error {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 
 	for _, p := range m.parseResults {
-		err := p.WalkGlobalSymbols(func(s Symbol) error {
+		err := p.WalkGlobalSymbols(func(s symbol.Symbol) error {
 			return walkFn(s)
 		}, types)
 		if err != nil {
@@ -97,7 +99,7 @@ func (m *parseResultsManager) WalkGlobalSymbols(walkFn func(Symbol) error, types
 	return nil
 }
 
-func (m *parseResultsManager) LookupGlobalSymbol(name string, types SymbolType) (Symbol, bool) {
+func (m *parseResultsManager) LookupGlobalSymbol(name string, types SymbolType) (symbol.Symbol, bool) {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 
@@ -110,14 +112,14 @@ func (m *parseResultsManager) LookupGlobalSymbol(name string, types SymbolType) 
 	return nil, false
 }
 
-func (m *parseResultsManager) GetGlobalSymbols(types SymbolType) ([]Symbol, error) {
-	result := make([]Symbol, 0, 200)
+func (m *parseResultsManager) GetGlobalSymbols(types SymbolType) ([]symbol.Symbol, error) {
+	result := make([]symbol.Symbol, 0, 200)
 
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 
 	for _, p := range m.parseResults {
-		p.WalkGlobalSymbols(func(s Symbol) error {
+		p.WalkGlobalSymbols(func(s symbol.Symbol) error {
 			result = append(result, s)
 			return nil
 		}, types)
@@ -417,7 +419,7 @@ func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 	return parsed, nil
 }
 
-func (h *parseResultsManager) resolveIntConstant(c string) int {
+func resolveIntConstant(h SymbolProvider, c string) int {
 	n, err := strconv.Atoi(c)
 	if err == nil {
 		return n
@@ -427,7 +429,7 @@ func (h *parseResultsManager) resolveIntConstant(c string) int {
 	if !ok {
 		return -1
 	}
-	cs, ok := found.(ConstantSymbol)
+	cs, ok := found.(symbol.Constant)
 	if !ok {
 		return -1
 	}
@@ -437,20 +439,22 @@ func (h *parseResultsManager) resolveIntConstant(c string) int {
 	return -1
 }
 
-func (h *parseResultsManager) getSymbolCode(s Symbol) string {
+func SymbolToReadableCode(symbols SymbolProvider, s symbol.Symbol) string {
 	var codeText string
-	if cas, ok := s.(ConstantArraySymbol); ok {
+	switch s := s.(type) {
+	case symbol.ConstantArray:
 		sb := strings.Builder{}
-		resolvedSize := h.resolveIntConstant(cas.ArraySizeText)
-		cas.Format(&sb, resolvedSize)
+		resolvedSize := resolveIntConstant(symbols, s.ArraySizeText)
+		s.Format(&sb, resolvedSize)
 		codeText = sb.String()
-	} else if cas, ok := s.(ArrayVariableSymbol); ok {
+	case symbol.ArrayVariable:
 		sb := strings.Builder{}
-		resolvedSize := h.resolveIntConstant(cas.ArraySizeText)
-		cas.Format(&sb, resolvedSize)
+		resolvedSize := resolveIntConstant(symbols, s.ArraySizeText)
+		s.Format(&sb, resolvedSize)
 		codeText = sb.String()
-	} else {
+	default:
 		codeText = s.String()
 	}
+
 	return codeText
 }
