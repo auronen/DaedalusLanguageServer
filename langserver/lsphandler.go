@@ -15,12 +15,15 @@ import (
 	"go.lsp.dev/uri"
 )
 
+var defaultProjectFiles = []string{"Gothic.src", "Camera.src", "Menu.src", "Music.src", "ParticleFX.src", "SFX.src", "VisualFX.src"}
+
 type LspConfig struct {
-	FileEncoding     string `json:"fileEncoding"`
-	SrcFileEncoding  string `json:"srcFileEncoding"`
-	LogLevel         string `json:"loglevel"`
-	PprofAddr        string `json:"pprofAddr"`
-	NumParserThreads int    `json:"numParserThreads"`
+	FileEncoding     string   `json:"fileEncoding"`
+	SrcFileEncoding  string   `json:"srcFileEncoding"`
+	LogLevel         string   `json:"loglevel"`
+	PprofAddr        string   `json:"pprofAddr"`
+	NumParserThreads int      `json:"numParserThreads"`
+	ProjectFiles     []string `json:"projectFiles"`
 }
 
 // LspHandler ...
@@ -67,6 +70,12 @@ func NewLspHandler(conn jsonrpc2.Conn, logger Logger) *LspHandler {
 			parsedDocuments: parsedDocuments,
 		},
 		onConfigChangedHandlers: []func(config LspConfig){},
+		config: LspConfig{
+			FileEncoding:    "1252",
+			SrcFileEncoding: "1252",
+			LogLevel:        "info",
+			ProjectFiles:    defaultProjectFiles,
+		},
 	}
 }
 
@@ -85,7 +94,7 @@ func getTypeFieldsAsCompletionItems(docs *parseResultsManager, symbolName string
 		return []lsp.CompletionItem{}, nil
 	}
 	if clsSym, ok := sym.(ClassSymbol); ok {
-		return fieldsToCompletionItems(clsSym.Fields), nil
+		return fieldsToCompletionItems(docs, clsSym.Fields), nil
 	}
 	if protoSym, ok := sym.(ProtoTypeOrInstanceSymbol); ok {
 		return getTypeFieldsAsCompletionItems(docs, protoSym.Parent, locals)
@@ -93,6 +102,10 @@ func getTypeFieldsAsCompletionItems(docs *parseResultsManager, symbolName string
 	if varSym, ok := sym.(VariableSymbol); ok {
 		return getTypeFieldsAsCompletionItems(docs, varSym.Type, locals)
 	}
+	// no way for e.g. C_NPC arrays
+	// if varSym, ok := sym.(ArrayVariableSymbol); ok {
+	// 	return getTypeFieldsAsCompletionItems(docs, varSym.Type, locals)
+	// }
 	return []lsp.CompletionItem{}, nil
 }
 
@@ -123,7 +136,7 @@ func (h *LspHandler) getTextDocumentCompletion(params *lsp.CompletionParams) ([]
 		for _, fn := range parsedDoc.Functions {
 			if fn.BodyDefinition.InBBox(di) {
 				for _, p := range fn.Parameters {
-					ci, err := completionItemFromSymbol(p)
+					ci, err := completionItemFromSymbol(h.parsedDocuments, p)
 					if err != nil {
 						continue
 					}
@@ -133,7 +146,7 @@ func (h *LspHandler) getTextDocumentCompletion(params *lsp.CompletionParams) ([]
 					result = append(result, ci)
 				}
 				for _, p := range fn.LocalVariables {
-					ci, err := completionItemFromSymbol(p)
+					ci, err := completionItemFromSymbol(h.parsedDocuments, p)
 					if err != nil {
 						continue
 					}
@@ -158,7 +171,7 @@ func (h *LspHandler) getTextDocumentCompletion(params *lsp.CompletionParams) ([]
 	}
 
 	h.parsedDocuments.WalkGlobalSymbols(func(s Symbol) error {
-		ci, err := completionItemFromSymbol(s)
+		ci, err := completionItemFromSymbol(h.parsedDocuments, s)
 		if err != nil {
 			return nil
 		}
@@ -291,7 +304,8 @@ func (h *LspHandler) handleTextDocumentHover(req RpcContext, data lsp.TextDocume
 	if err != nil {
 		return req.Reply(req.Context(), nil, nil)
 	}
-	h.LogDebug("Found Symbol for Hover: %s\n", found.String())
+	h.LogDebug("Found Symbol for Hover: %s", found.String())
+
 	return req.Reply(req.Context(), lsp.Hover{
 		Range: &lsp.Range{
 			Start: data.Position,
@@ -299,7 +313,7 @@ func (h *LspHandler) handleTextDocumentHover(req RpcContext, data lsp.TextDocume
 		},
 		Contents: lsp.MarkupContent{
 			Kind:  lsp.Markdown,
-			Value: strings.TrimSpace(simpleJavadocMD(found) + "\n\n```daedalus\n" + found.String() + "\n```"),
+			Value: strings.TrimSpace(simpleJavadocMD(found) + "\n\n```daedalus\n" + h.parsedDocuments.getSymbolCode(found) + "\n```"),
 		},
 	}, nil)
 }
@@ -313,11 +327,9 @@ func (h *LspHandler) handleTextDocumentSignatureHelp(req RpcContext, data lsp.Te
 
 func getSymbolKind(s Symbol) lsp.SymbolKind {
 	switch s.(type) {
-	case ArrayVariableSymbol:
+	case ArrayVariableSymbol, ConstantArraySymbol:
 		return lsp.SymbolKindArray
-	case ClassSymbol:
-		return lsp.SymbolKindClass
-	case ProtoTypeOrInstanceSymbol:
+	case ClassSymbol, ProtoTypeOrInstanceSymbol:
 		return lsp.SymbolKindClass
 	case FunctionSymbol:
 		return lsp.SymbolKindFunction
@@ -565,6 +577,10 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 			v(h.config)
 		}
 
+		if len(h.config.ProjectFiles) == 0 {
+			h.config.ProjectFiles = defaultProjectFiles
+		}
+
 		return nil
 	case lsp.MethodInitialized:
 		return nil
@@ -628,21 +644,32 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 				}
 			}
 
-			for _, v := range []string{"Gothic.src", "Camera.src", "Menu.src", "Music.src", "ParticleFX.src", "SFX.src", "VisualFX.src"} {
-				if full, err := findPathAnywhereUpToRoot(wd, v); err == nil {
-					if h.parsedKnownSrcFiles.Contains(full) {
+			for _, v := range h.config.ProjectFiles {
+				var err error
+				full := v
+				if filepath.IsAbs(full) || strings.ContainsAny(full, "\\/") {
+					// User defined hardcoded project file, either absolute or relative
+					if _, err := os.Stat(full); err != nil {
+						h.LogError("Error user-define project file %s: %v", full, err)
 						continue
 					}
-					h.parsedKnownSrcFiles.Store(full)
-					results, err := h.parsedDocuments.ParseSource(full)
-					if err != nil {
-						h.LogError("Error parsing %s: %v", full, err)
-						return
-					}
-					resultsX = append(resultsX, results...)
 				} else {
-					h.LogDebug("Did not parse %q: %v", v, err)
+					full, err = findPathAnywhereUpToRoot(wd, v)
 				}
+				if err != nil {
+					h.LogDebug("Did not parse %q: %v", v, err)
+					continue
+				}
+				if h.parsedKnownSrcFiles.Contains(full) {
+					continue
+				}
+				h.parsedKnownSrcFiles.Store(full)
+				results, err := h.parsedDocuments.ParseSource(full)
+				if err != nil {
+					h.LogError("Error parsing %s: %v", full, err)
+					continue
+				}
+				resultsX = append(resultsX, results...)
 			}
 
 			var diagnostics = make([]lsp.Diagnostic, 0)
