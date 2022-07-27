@@ -22,14 +22,6 @@ type symbolBase struct {
 	SymbolDefinition    Definition
 }
 
-var _ Symbol = (*Function)(nil)
-var _ Symbol = (*ArrayVariable)(nil)
-var _ Symbol = (*Variable)(nil)
-var _ Symbol = (*Constant)(nil)
-var _ Symbol = (*ProtoTypeOrInstance)(nil)
-var _ Symbol = (*Class)(nil)
-var _ Symbol = (*ConstantArray)(nil)
-
 func newSymbolBase(name, source, doc string, def Definition) symbolBase {
 	return symbolBase{
 		NameValue:           name,
@@ -38,6 +30,14 @@ func newSymbolBase(name, source, doc string, def Definition) symbolBase {
 		SymbolDefinition:    def,
 	}
 }
+
+var _ Symbol = (*Function)(nil)
+var _ Symbol = (*ArrayVariable)(nil)
+var _ Symbol = (*Variable)(nil)
+var _ Symbol = (*Constant)(nil)
+var _ Symbol = (*ProtoTypeOrInstance)(nil)
+var _ Symbol = (*Class)(nil)
+var _ Symbol = (*ConstantArray)(nil)
 
 // NewFunction ...
 func NewFunction(name, source, doc string, def Definition, retType string, bodyDef Definition, params []Variable, locals []Symbol) Function {
@@ -59,11 +59,12 @@ func NewVariable(name, varType, source, documentation string, definiton Definiti
 }
 
 // NewVariableSymbol ...
-func NewArrayVariable(name, varType, sizeText, source, documentation string, definiton Definition) ArrayVariable {
+func NewArrayVariable(name, varType, sizeText, source, documentation string, definiton Definition /* , elements []ArrayElement */) ArrayVariable {
 	return ArrayVariable{
 		Type:          varType,
 		ArraySizeText: sizeText,
 		symbolBase:    newSymbolBase(name, source, documentation, definiton),
+		//Elements:      elements,
 	}
 }
 
@@ -76,11 +77,12 @@ func NewConstant(name, varType, source, documentation string, definiton Definiti
 }
 
 // NewConstantArray ...
-func NewConstantArray(name, varType, arraySizeText, source, documentation string, definiton Definition, value string) ConstantArray {
+func NewConstantArray(name, varType, arraySizeText, source, documentation string, definiton Definition, value string, elements []ArrayElement) ConstantArray {
 	return ConstantArray{
 		Variable:      NewVariable(name, varType, source, documentation, definiton),
 		Value:         value,
 		ArraySizeText: arraySizeText,
+		Elements:      elements,
 	}
 }
 
@@ -180,6 +182,7 @@ func (s Variable) GetType() string {
 type ArrayVariable struct {
 	Type          string
 	ArraySizeText string
+	Elements      []ArrayElement
 	symbolBase
 }
 
@@ -226,6 +229,7 @@ func (s Constant) GetType() string {
 type ConstantArray struct {
 	Value         string
 	ArraySizeText string
+	Elements      []ArrayElement
 	Variable
 }
 
@@ -333,4 +337,23 @@ func (sd Definition) InBBox(di DefinitionIndex) bool {
 type DefinitionIndex struct {
 	Line   int
 	Column int
+}
+
+// ArrayElement ...
+type ArrayElement struct {
+	Index      int
+	Value      string
+	Definition Definition
+}
+
+func NewArrayElement(index int, value string, definiton Definition) ArrayElement {
+	return ArrayElement{
+		Index:      index,
+		Value:      value,
+		Definition: definiton,
+	}
+}
+
+func (el ArrayElement) GetValue() string {
+	return el.Value
 }

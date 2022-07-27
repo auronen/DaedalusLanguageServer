@@ -165,6 +165,8 @@ func (h *LspHandler) onInitialized() {
 
 	h.handlers.Register(lsp.MethodTextDocumentDocumentSymbol, dls.MakeHandler(h.handleDocumentSymbol))
 	h.handlers.Register(lsp.MethodWorkspaceSymbol, dls.MakeHandler(h.handleWorkspaceSymbol))
+	// commands
+	h.handlers.Register(lsp.MethodWorkspaceExecuteCommand, dls.MakeHandler(h.handleCommand))
 }
 
 func prettyJSON(val interface{}) string {
@@ -205,6 +207,9 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 				},
 				WorkspaceSymbolProvider: true,
 				DocumentSymbolProvider:  true,
+				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
+					Commands: []string{"daedalus.dls-constants"},
+				},
 			},
 		}, nil); err != nil {
 			return fmt.Errorf("not initialized")

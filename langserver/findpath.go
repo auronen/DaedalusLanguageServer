@@ -41,6 +41,15 @@ func findPaths(file string) ([]string, error) {
 	if len(matches) == 0 {
 		return nil, os.ErrNotExist
 	}
+	for i, p := range matches {
+		p_s, err := filepath.EvalSymlinks(p)
+		if err == nil {
+			matches[i] = p_s
+		} else {
+			return nil, fmt.Errorf("could not eval symlink: %s", err)
+		}
+	}
+
 	return matches, nil
 }
 
