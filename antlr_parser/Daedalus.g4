@@ -26,7 +26,7 @@ TooManyCommentlines : '////' ~[\r\n]* -> skip ;
 SummaryComment : DocCommentStart ~[\r\n]+;
 Newline : [\r\n] -> skip;
 BlockComment :   '/*' .*? '*/' -> skip;
-LineComment :   '//' ~[\r\n]* -> skip ;
+LineComment :   '//' ~[\r\n]* -> channel(HIDDEN);
 
 // fragments
 fragment IdStart : GermanCharacter | [a-zA-Z_];

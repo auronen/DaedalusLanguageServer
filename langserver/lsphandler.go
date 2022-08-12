@@ -208,7 +208,9 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 				WorkspaceSymbolProvider: true,
 				DocumentSymbolProvider:  true,
 				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
-					Commands: []string{"daedalus.dls-constants"},
+					Commands: []string{
+						DlsAll,
+					},
 				},
 			},
 		}, nil); err != nil {

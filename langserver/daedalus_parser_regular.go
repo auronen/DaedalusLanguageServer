@@ -27,6 +27,26 @@ func newRegularParser() *RegularParser {
 	}
 }
 
+func (rp *RegularParser) GetTokenStream(source, content string) *antlr.CommonTokenStream {
+	inputStream := antlr.NewInputStream(content)
+	lexer := parser.NewDaedalusLexer(inputStream)
+	tokenStream := antlr.NewCommonTokenStream(lexer, 0)
+
+	p := rp.pooledParsers.Get()
+	defer func() {
+		p.SetInputStream(nil)
+		rp.pooledParsers.Put(p)
+	}()
+	p.SetInputStream(tokenStream)
+
+	p.RemoveErrorListeners()
+	// Use SLL prediction
+	p.GetInterpreter().SetPredictionMode(antlr.PredictionModeSLL)
+
+	antlr.NewParseTreeWalker().Walk(&antlr.BaseParseTreeListener{}, p.NewDaedalusFile())
+	return tokenStream
+}
+
 func (rp *RegularParser) Parse(source, content string, listener antlr.ParseTreeListener, errListener antlr.ErrorListener) {
 	inputStream := antlr.NewInputStream(content)
 	lexer := parser.NewDaedalusLexer(inputStream)

@@ -16,6 +16,12 @@ type ParseResult struct {
 	Prototypes      map[string]symbol.ProtoTypeOrInstance
 	Source          string
 	SyntaxErrors    []SyntaxError
+
+	GlobalComments map[int]Comment
+	// Dialogues
+	GlobalDialogues []Dialogue
+	StringLiterals  []StringLiteral
+	SVMs            []SVM
 }
 
 func (r *ParseResult) CountSymbols() int64 {

@@ -18,6 +18,7 @@ type DaedalusGrammarParser interface {
 
 type Parser interface {
 	Parse(source, content string, listener antlr.ParseTreeListener, errListener antlr.ErrorListener)
+	GetTokenStream(source, content string) *antlr.CommonTokenStream
 }
 
 type parserPool struct {
@@ -52,6 +53,12 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string) *Pa
 		Prototypes:      stateful.Prototypes,
 		Instances:       stateful.Instances,
 		Source:          source,
+
+		GlobalComments: m.ParseComments(m.parser.GetTokenStream(source, content), source),
+		// Dialogues
+		GlobalDialogues: stateful.GlobalDialogues,
+		StringLiterals:  stateful.StringLiterals,
+		SVMs:            stateful.SVMs,
 	}
 	return result
 }
@@ -71,6 +78,12 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 		Prototypes:      listener.Prototypes,
 		Instances:       listener.Instances,
 		Source:          source,
+
+		GlobalComments: m.ParseComments(m.parser.GetTokenStream(source, content), source),
+		// Dialogues
+		GlobalDialogues: listener.GlobalDialogues,
+		StringLiterals:  listener.StringLiterals,
+		SVMs:            listener.SVMs,
 	}
 	return result
 }
@@ -186,4 +199,23 @@ func (p *ParseResult) WalkGlobalSymbols(walkFn func(symbol.Symbol) error, types 
 		}
 	}
 	return nil
+}
+
+func (m *parseResultsManager) ParseComments(tokenStream *antlr.CommonTokenStream, source string) map[int]Comment {
+	commentMap := map[int]Comment{}
+	tokens := tokenStream.GetAllTokens()
+	//fmt.Fprintf(os.Stderr, "tokens: %d", len(tokens))
+	for /* i */ _, tok := range tokens {
+		// skip tokens from the main channel
+		if tok.GetChannel() == 0 {
+			continue
+		}
+		/* if i > 10 {
+			break
+		}
+		fmt.Fprintf(os.Stderr, "JOP: %s\n", tok.GetText())
+		*/
+		commentMap[tok.GetLine()] = newCommentFromToken(tok)
+	}
+	return commentMap
 }

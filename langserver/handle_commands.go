@@ -8,21 +8,17 @@ import (
 )
 
 const (
-	DlsConstants string = "daedalus.dls-constants"
+	//DlsConstants string = "daedalus.dls-constants"
+	//DlsDialogues string = "daedalus.dls-dialogues"
+	DlsAll string = "daedalus.dls-all"
 )
 
 func (h *LspHandler) handleCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
-	if params.Command == DlsConstants {
-		h.logger.Infof("Generating...")
-		h.generateConstStringCSV()
-		h.logger.Infof("Done")
-		// This should return progress
-		return nil
-	} /* else if params.Command == "daedalus.dialogues" {
-		h.logger.Infof("Generating dialogues")
-		h.generateDialogueCSV()
+	if params.Command == DlsAll {
+		h.logger.Infof("Generating all")
+		h.generateAllCSV()
 		h.logger.Infof("Done")
 		return nil
-	} */
+	}
 	return fmt.Errorf("no command found")
 }

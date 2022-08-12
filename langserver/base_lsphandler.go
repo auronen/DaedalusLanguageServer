@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	dls "github.com/kirides/DaedalusLanguageServer"
@@ -67,5 +68,10 @@ func uriToFilename(v uri.URI) string {
 	}
 	v = uri.URI(fixed)
 
-	return v.Filename()
+	p_s, err := filepath.EvalSymlinks(v.Filename())
+	if err == nil {
+		return p_s
+	} else {
+		return ""
+	}
 }

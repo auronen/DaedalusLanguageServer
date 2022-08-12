@@ -4,13 +4,14 @@
 package langserver
 
 import (
-	"encoding/csv"
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/integralist/go-findroot/find"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/symbol"
 )
@@ -62,10 +63,30 @@ func newCSVentry(loc, src, trgt, id, fuzz, ctx, tr_c, dev_c, pth string, lN int)
 	}
 }
 
+func (c *CSVentry) GetEscapedCSV() string {
+	src := c.source
+	if strings.Contains(c.source, "\"") {
+		src = strings.ReplaceAll(src, "\"", "'")
+	}
+	trgt := c.target
+	if strings.Contains(c.target, "\"") {
+		trgt = strings.ReplaceAll(trgt, "\"", "'")
+	}
+	return "\"" + c.location + "\",\"" +
+		src + "\",\"" +
+		trgt + "\",\"" +
+		c.id + "\",\"" +
+		c.fuzzy + "\",\"" +
+		c.context + "\",\"" +
+		c.translator_comments + "\",\"" +
+		c.developer_comments + "\""
+}
+
 func trimQuotes(input string) string {
 	return strings.Trim(input, "\"")
 }
 
+/*
 func newCSVentryFromConstSymbol(symbol symbol.Constant) CSVentry {
 	line := symbol.Definition().Start.Line
 	// TODO: Do not ignore the error!
@@ -84,8 +105,7 @@ func newCSVentryFromConstSymbol(symbol symbol.Constant) CSVentry {
 		developer_comments:  "",
 	}
 }
-
-/*
+*/
 func newCSVentryFromDialogue(dia Dialogue) CSVentry {
 	// TODO: Do not ignore the error!
 	file, _ := getRepoRelativePath(dia.sourceFile)
@@ -103,9 +123,25 @@ func newCSVentryFromDialogue(dia Dialogue) CSVentry {
 		developer_comments:  "",
 	}
 }
-*/
-/*
+
 func newCSVentryFromStringLiteral(s StringLiteral) CSVentry {
+	file, _ := getRepoRelativePath(s.sourceFile)
+	return CSVentry{
+		path:       file,
+		lineNumber: s.line,
+
+		location:            file + ":" + fmt.Sprint(s.line),
+		source:              trimQuotes(s.text),
+		target:              "",
+		id:                  "",
+		fuzzy:               "",
+		context:             trimQuotes(s.context),
+		translator_comments: "",
+		developer_comments:  s.devComment,
+	}
+}
+
+func newCSVentryFromSVM(s SVM) CSVentry {
 	file, _ := getRepoRelativePath(s.sourceFile)
 	return CSVentry{
 		path:       file,
@@ -121,7 +157,7 @@ func newCSVentryFromStringLiteral(s StringLiteral) CSVentry {
 		developer_comments:  "",
 	}
 }
-*/
+
 func newCSVentryFromConstArraySymbol(sym symbol.ConstantArray) []CSVentry {
 	entries := make([]CSVentry, 0, 100)
 	file, _ := getRepoRelativePath(sym.Source())
@@ -147,6 +183,7 @@ func newCSVentryFromConstArraySymbol(sym symbol.ConstantArray) []CSVentry {
 	return entries
 }
 
+/*
 func (e CSVentry) getValue() []string {
 	return []string{e.location,
 		e.source,
@@ -157,6 +194,7 @@ func (e CSVentry) getValue() []string {
 		e.translator_comments,
 		e.developer_comments}
 }
+*/
 
 // header for the CSV files
 var CSVHeader CSVentry = newCSVentry("location", "source", "target", "id", "fuzzy", "context", "translator_comments", "developer_comments", "", 0)
@@ -181,6 +219,9 @@ func getRepoRelativePath(path string) (string, error) {
 	return "", err
 }
 
+// old csvWirte func
+// it is not possible to force all entries to be escaped
+/*
 func csvWrite(data [][]string, filename, lang string) error {
 	// create path
 	repoRoot, err := findRepoRoot()
@@ -204,13 +245,60 @@ func csvWrite(data [][]string, filename, lang string) error {
 	}
 	return nil
 }
+*/
 
-/*
-// Generates CSV containing all dialogues
-// DONE: add C_INFO.description entries
-func (h *LspHandler) generateDialogueCSV() {
+// write the CSVentry slice as an escaped CSV file with the filename: `filename`_`lang`.csv
+func csvWrite(entries []CSVentry, filename, lang string) error {
+	// create path
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return err
+	}
+	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations", lang), os.ModePerm)
+	file, err := os.Create(filepath.Join(repoRoot, ".translations", lang, filename+"_"+lang+".csv"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	defer writer.Flush()
+
+	writer.WriteString("\"location\",\"source\",\"target\",\"id\",\"fuzzy\",\"context\",\"translator_comments\",\"developer_comments\"\n")
+
+	for _, entry := range entries {
+		writer.WriteString(entry.GetEscapedCSV() + "\n")
+	}
+	return nil
+}
+
+// Generates one giant escaped csv file with all translatable strings
+func (h *LspHandler) generateAllCSV() {
 	entries := make([]CSVentry, 0, 200)
 
+	// everything
+	for _, res := range h.parsedDocuments.parseResults {
+		for _, strLit := range res.StringLiterals {
+			entries = append(entries, newCSVentryFromStringLiteral(strLit))
+		}
+	}
+	// const arrays
+	consts, err := h.parsedDocuments.GetGlobalSymbols(SymbolConstant)
+	if err != nil {
+		return
+	}
+	for _, c := range consts {
+		if sym, ok := c.(symbol.ConstantArray); ok {
+			if strings.EqualFold(sym.Type, "string") {
+				if !isBlacklisted_constArray(sym.NameValue) {
+					entries = append(entries, newCSVentryFromConstArraySymbol(sym)...)
+				}
+			}
+		}
+	}
+
+	// dialogues
 	for _, res := range h.parsedDocuments.parseResults {
 		for _, dia := range res.GlobalDialogues {
 			dia.text = strings.TrimLeft(res.GlobalComments[dia.line].text, "/")
@@ -218,150 +306,219 @@ func (h *LspHandler) generateDialogueCSV() {
 		}
 	}
 
+	// SVMs
 	for _, res := range h.parsedDocuments.parseResults {
-		for _, descr := range res.C_InfoDescriptions {
-			entries = append(entries, newCSVentryFromStringLiteral(descr))
+		for _, svm := range res.SVMs {
+			svm.text = strings.TrimLeft(res.GlobalComments[svm.line].text, "/")
+			entries = append(entries, newCSVentryFromSVM(svm))
 		}
 	}
 
 	// Sort entries by file and then by line (ensures comfortable translations)
+	// and enables "easy" file splitting
 	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].path != entries[j].path {
+		if !strings.EqualFold(entries[i].path, entries[j].path) {
 			return entries[i].path < entries[j].path
 		}
 		return entries[i].lineNumber < entries[j].lineNumber
 	})
 
-	data := make([][]string, 0, len(entries))
-	for _, l := range entries {
-		data = append(data, l.getValue())
-	}
-
-	h.logger.Infof("Got %d dialogues", len(entries))
-	csvWrite(data, "DIA", "de")
+	h.logger.Infof("Got %d lines", len(entries))
+	csvWrite(entries, "All", "cs")
 }
+
+// function black list
+var FuncBlackList = []string{
+	"PrintDebug",
+	"PrintDialog",
+	"PrintDebugInst",
+	"PrintDebugInstCh",
+	"PrintDebugCh",
+	"PrintMulti",
+	"PlayVideo",
+	"PlayVideoEx",
+	"Wld_IsMobAvailable",
+	"Wld_IsFPAvailable",
+	"Wld_IsNextFPAvailable",
+	"Npc_GetDisttowp",
+	"AI_StartState",
+	"AI_OutputSvm",
+	"AI_OutputSvm_Overlay",
+	"AI_PlayCutscene",
+	"AI_PlayAni",
+	"AI_PlayAniBS",
+	"AI_GoToWP",
+	"AI_Teleport",
+	"AI_GoToFP",
+	"Npc_IsOnFP",
+	"AI_GoToNextFP",
+	"Npc_StopAni",
+	"Npc_PlayAni",
+	"Wld_GetMobState",
+	"AI_LookAt",
+	"AI_PointAt",
+	"AI_AskText",
+	"AI_Snd_Play",
+	"AI_Snd_Play3d",
+	"Snd_Play",
+	"Snd_Play3d",
+	"Mis_AddMissionEntry",
+	"Mdl_SetVisual",
+	"Mdl_SetVisualBody",
+	"Mdl_ApplyOverlayMds",
+	"Mdl_ApplyOverlayMdsTimed",
+	"Mdl_RemoveOverlayMds",
+	"Mdl_ApplyRandomAni",
+	"Mdl_ApplyRandomAniFreq",
+	"Mdl_StartFaceAni",
+	"Mdl_ApplyRandomFaceAni",
+	"Wld_InsertNpc",
+	"Wld_PlayEffect",
+	"Wld_StopEffect",
+	"AI_PlayFx",
+	"AI_StopFx",
+	"Wld_InsertNpcAndRespawn",
+	"Wld_InsertItem",
+	"Wld_InsertObject",
+	"Wld_ExchangeGuildAttitudes",
+	"Wld_SetObjectRoutine",
+	"Wld_SetMobRoutine",
+	"Wld_SendTrigger",
+	"Wld_SendUntrigger",
+	"AI_TakeMob",
+	"AI_UseMob",
+	"Mob_CreateItems",
+	"Mob_HasItems",
+	"Doc_SetPage",
+	"Doc_SetFont",
+	"Doc_SetLevel",
+	"Doc_Open",
+	"Doc_Font",
+	"Doc_MapCoordinates",
+	"TA",
+	"TA_Min",
+	"TA_Cs",
+	"Npc_ExchangeRoutine",
+	"RTN_Exchange",
+	"Wld_AssignRoomToGuild",
+	"Wld_AssignRoomToNpc",
+	"Hlp_CutscenePlayed",
+	"AI_Output",
+	"PrintDebugNpc",
+	"B_ExchangeRoutineRun",
+	"B_ExchangeRoutine",
+	"B_SayOverlay",
+	"PrintDebugString",
+	"PrintDebugInt",
+	"B_GotoFP",
+	"B_InterruptMob",
+	"ZS_Meditate_Om",
+	"B_StartUseMob",
+	"B_PracticeCombat",
+	"B_StopUseMob",
+}
+
+func IsBlacklisted(e string) bool {
+	for _, a := range FuncBlackList {
+		if strings.EqualFold(a, e) {
+			return true
+		}
+	}
+	return false
+}
+
+// const array black list
+/*
+	This is not very nice, it would probably be better to redo this based on the
+	path filters and apply them before appending them when generating the CSV
 */
+var constArrBlackList = []string{
+	"spellFxAniLetters",    // base game
+	"spellFxInstanceNames", // base game
+	"GFA_AIM_ANIS",         // Gothic Free Aim
+	"PARSER_TOKEN_NAMES",   // Ikarus
+}
 
-// Generates CSV containing all constStrings
-func (h *LspHandler) generateConstStringCSV() {
-	entries := make([]CSVentry, 0, 200)
-	consts, err := h.parsedDocuments.GetGlobalSymbols(SymbolConstant)
-	if err != nil {
-		return
-	}
-	for _, c := range consts {
-		sym, ok := c.(symbol.Constant)
-		if ok {
-			if strings.EqualFold(sym.Type, "string") {
-				line := newCSVentryFromConstSymbol(sym)
-				if line.source == "" {
-					continue
-				}
-				entries = append(entries, line /*.getValue()*/)
-			}
-		} else if sym, ok := c.(symbol.ConstantArray); ok {
-			if strings.EqualFold(sym.Type, "string") {
-				entries = append(entries, newCSVentryFromConstArraySymbol(sym)...)
-			}
+func isBlacklisted_constArray(e string) bool {
+	for _, a := range constArrBlackList {
+		if strings.EqualFold(a, e) {
+			return true
 		}
 	}
+	return false
+}
 
-	// Sort entries by file and then by line (ensures comfortable translations)
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].path != entries[j].path {
-			return entries[i].path < entries[j].path
-		}
-		return entries[i].lineNumber < entries[j].lineNumber
-	})
+type Comment struct {
+	text string
+	line int
+}
 
-	var headerSlice []CSVentry = []CSVentry{CSVHeader}
-	entries = append(headerSlice, entries...) // prepend header
-
-	data := make([][]string, 0, len(entries))
-	for _, l := range entries {
-		data = append(data, l.getValue())
+func newCommentFromToken(tok antlr.Token) Comment {
+	return Comment{
+		text: tok.GetText(),
+		line: tok.GetLine(),
 	}
+}
 
-	h.logger.Infof("Got %d string constants", len(entries))
-	csvWrite(data, "Const", "de")
+type Dialogue struct {
+	soundName  string
+	text       string
+	sourceFile string
+	line       int
+}
+
+func newDialogue(sndName, txt, srcFile string, ln int) Dialogue {
+	return Dialogue{
+		soundName:  sndName,
+		text:       txt,
+		sourceFile: srcFile,
+		line:       ln,
+	}
+}
+
+type StringLiteral struct {
+	text       string
+	sourceFile string
+	line       int
+	context    string
+	devComment string
+}
+
+func newStringLiteral(txt, source string, ln int, ctx, devCmnt string) StringLiteral {
+	return StringLiteral{
+		text:       txt,
+		sourceFile: source,
+		line:       ln,
+		context:    ctx,
+		devComment: devCmnt,
+	}
+}
+
+type SVM struct {
+	text       string
+	sourceFile string
+	line       int
+	context    string
+	devComment string
+}
+
+func newSVM(txt, source string, ln int, ctx string) StringLiteral {
+	return StringLiteral{
+		text:       txt,
+		sourceFile: source,
+		line:       ln,
+		context:    ctx,
+		devComment: "",
+	}
 }
 
 /*
-Ignore these externals with string literals
+func (h *LspHandler) parseScripts() {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	GothicSrcPath, err := findPathAnywhereUpToRoot(wd, "Gothic.src")
 
-PrintDebug
-PrintDialog
-PrintDebugInst
-PrintDebugInstCh
-PrintDebugCh
-PrintMulti
-PlayVideo
-PlayVideoEx
-Wld_IsMobAvailable
-Wld_IsFPAvailable
-Wld_IsNextFPAvailable
-Npc_GetDisttowp
-AI_StartState
-AI_OutputSvm
-AI_OutputSvm_Overlay
-AI_PlayCutscene
-AI_PlayAni
-AI_PlayAniBS
-AI_GoToWP
-AI_Teleport
-AI_GoToFP
-Npc_IsOnFP
-AI_GoToNextFP
-Npc_StopAni
-Npc_PlayAni
-Wld_GetMobState
-AI_LookAt
-AI_PointAt
-AI_AskText
-AI_Snd_Play
-AI_Snd_Play3d
-Snd_Play
-Snd_Play3d
-Mis_AddMissionEntry
-Mdl_SetVisual
-Mdl_SetVisualBody
-Mdl_ApplyOverlayMds
-Mdl_ApplyOverlayMdsTimed
-Mdl_RemoveOverlayMds
-Mdl_ApplyRandomAni
-Mdl_ApplyRandomAniFreq
-Mdl_StartFaceAni
-Mdl_ApplyRandomFaceAni
-Wld_InsertNpc
-Wld_PlayEffect
-Wld_StopEffect
-AI_PlayFx
-AI_StopFx
-Wld_InsertNpcAndRespawn
-Wld_InsertItem
-Wld_InsertObject
-Wld_ExchangeGuildAttitudes
-Wld_SetObjectRoutine
-Wld_SetMobRoutine
-Wld_SendTrigger
-Wld_SendUntrigger
-AI_TakeMob
-AI_UseMob
-Mob_CreateItems
-Mob_HasItems
-Doc_SetPage
-Doc_SetFont
-Doc_SetLevel
-Doc_Open
-Doc_Font
-Doc_MapCoordinates
-TA
-TA_Min
-TA_Cs
-Npc_ExchangeRoutine
-RTN_Exchange
-Wld_AssignRoomToGuild
-Wld_AssignRoomToNpc
-Hlp_CutscenePlayed
-
+}
 */
