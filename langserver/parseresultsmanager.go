@@ -15,6 +15,7 @@ import (
 	"github.com/kirides/DaedalusLanguageServer/daedalus/symbol"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/unicode"
 )
 
 type parseResultsManager struct {
@@ -52,6 +53,7 @@ var encodings = map[string]encoding.Encoding{
 	"WINDOWS-1256": charmap.Windows1256,
 	"WINDOWS-1257": charmap.Windows1257,
 	"WINDOWS-1258": charmap.Windows1258,
+	"UTF-8":        unicode.UTF8,
 }
 
 func (m *parseResultsManager) SetFileEncoding(enc string) error {

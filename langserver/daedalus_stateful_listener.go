@@ -30,6 +30,7 @@ type DaedalusStatefulListener struct {
 	GlobalDialogues []Dialogue
 	StringLiterals  []StringLiteral
 	SVMs            []SVM
+	UnionLocalized  []TranslationStringEntry
 }
 
 type SymbolProvider interface {
@@ -54,6 +55,7 @@ func NewDaedalusStatefulListener(source string, knownSymbols SymbolProvider) *Da
 		GlobalDialogues: []Dialogue{},
 		StringLiterals:  []StringLiteral{},
 		SVMs:            []SVM{},
+		//	newConstantNames: make(map[string]int),
 	}
 }
 
@@ -369,15 +371,83 @@ func (l *DaedalusStatefulListener) findAI_OutputFuncCallsStatements(root antlr.T
 	return foundCalls
 }
 
+/*
+func (l *DaedalusStatefulListener) findStr_GetLocalizedStringEx(root antlr.Tree) []Dialogue {
+	var foundCalls []Dialogue
+	for _, s := range root.GetChildren() {
+		if funcCall, ok := s.(*parser.FuncCallContext); ok {
+			if strings.EqualFold(funcCall.NameNode().GetText(), "Str_GetLocalizedString") {
+				// TODO: Parse languages and the left side of the assignment
+
+				l.UnionLocalized = append(l.UnionLocalized, NewTranslationStringEntry(
+					"TODO",
+					funcCall.AllFuncArgExpression()[0].GetText(),
+					funcCall.AllFuncArgExpression()[1].GetText(),
+					funcCall.AllFuncArgExpression()[2].GetText(),
+					funcCall.AllFuncArgExpression()[3].GetText(),
+					"",
+					"",
+					"",
+					"",
+				))
+			} else if strings.EqualFold(funcCall.NameNode().GetText(), "Str_GetLocalizedStringEx") {
+				foundCalls = append(foundCalls, newDialogue(funcCall.AllFuncArgExpression()[2].GetText(),
+					"", // filled in in the csv generation phase
+					l.source,
+					funcCall.GetStart().GetLine()))
+			}
+		} else if s.GetChildCount() > 0 {
+			foundCalls = append(foundCalls, l.findAI_OutputFuncCallsStatements(s)...)
+		}
+	}
+	return foundCalls
+}
+*/
+var NewConstantNames = make(map[string]int)
+
+//NewConstantNames = make(map[string]int)
+
 func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLiteralValueContext) {
 
-	// Filter Ikarus, Lego, GFA and AFSP
+	// Filter Ikarus, Lego, GFA and AFSP and various files TODO: Introduce config file for this
 	if strings.Contains(strings.ToLower(l.source), strings.ToLower("LeGo")) ||
 		strings.Contains(strings.ToLower(l.source), strings.ToLower("ikarus")) ||
 		strings.Contains(strings.ToLower(l.source), strings.ToLower("AFSP")) ||
 		strings.Contains(strings.ToLower(l.source), strings.ToLower("BODYSTATES")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("TestModelle")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("TestZustaende/")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("B_Plunder.d")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("B_MoveMob.d")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("PrintDebug.d")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("B_TestReaction.d")) ||
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("B_Functions.d")) || // asdf
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("/G_Constants.d")) || // asdf
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("/insertAnything.d")) || // asdf
+		strings.Contains(strings.ToLower(l.source), strings.ToLower("/CC_Call.d")) || // asdf
 		strings.Contains(strings.ToLower(l.source), strings.ToLower("GFA")) {
 		return
+	}
+
+	// known instances
+	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[0]") { // C_ITEM and menus
+			return
+		}
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[1]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[2]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[3]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[4]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[5]") { // C_ITEM
+			return
+		}
 	}
 
 	content := ctx.ValueContext.GetText()
@@ -433,8 +503,9 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 					content,
 					l.source,
 					ctx.ValueContext.GetStart().GetLine(),
-					fncCtx.AllFuncArgExpression()[2].GetText(),
+					fncCtx.AllFuncArgExpression()[0].GetText()+"."+fncCtx.AllFuncArgExpression()[2].GetText(),
 					"",
+					"Info_AddChoice", // translation comment
 				),
 			)
 			return
@@ -444,6 +515,32 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 		if IsBlacklisted(fncName) {
 			return
 		} else {
+			const_name := ""
+
+			if strings.EqualFold(fncName, "B_LogEntry") {
+				const_name = fncCtx.AllFuncArgExpression()[0].GetText()
+			} else if strings.EqualFold(fncName, "Log_AddEntry") {
+				const_name = fncCtx.AllFuncArgExpression()[0].GetText()
+			} else if strings.EqualFold(fncName, "EndeQuest") {
+				const_name = fncCtx.AllFuncArgExpression()[0].GetText()
+			} else if strings.EqualFold(fncName, "QuestTagebucheintrag") {
+				const_name = fncCtx.AllFuncArgExpression()[0].GetText()
+			} else if strings.EqualFold(fncName, "NeueQuest") {
+				const_name = fncCtx.AllFuncArgExpression()[0].GetText()
+			} else if strings.EqualFold(fncName, "Doc_PrintLine") {
+				if fnc, ok := fncCtx.GetParent().GetParent().GetParent().(*parser.FunctionDefContext); ok {
+					const_name = fnc.NameNode().GetText()
+				}
+			} else if strings.EqualFold(fncName, "Doc_PrintLines") {
+				if fnc, ok := fncCtx.GetParent().GetParent().GetParent().(*parser.FunctionDefContext); ok {
+					const_name = fnc.NameNode().GetText()
+				}
+			} else if strings.EqualFold(fncName, "PrintScreen") {
+				const_name = fncName
+			}
+
+			NewConstantNames[const_name] += 1
+
 			l.StringLiterals = append(l.StringLiterals,
 				newStringLiteral(
 					content,
@@ -451,6 +548,7 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 					ctx.ValueContext.GetStart().GetLine(),
 					"",
 					fncName+" call.", // add a developer comment to tell translators/translation preparators in which function is the string used as a parameter
+					const_name+"_"+fmt.Sprintf("%d", NewConstantNames[const_name]),
 				),
 			)
 			return
@@ -498,6 +596,7 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 				ctx.ValueContext.GetStart().GetLine(),
 				constCtx.NameNode().GetText(),
 				"",
+				"",
 			),
 		)
 		return
@@ -518,7 +617,7 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 
 	// constat arrays
 	if /* constArrCtx */ _, ok := ctx.GetParent().GetParent().GetParent().(*parser.ConstArrayAssignmentContext); ok {
-		// skip them, the are already parsed
+		// skip them, they are already parsed
 		return
 	}
 
@@ -530,6 +629,7 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 			ctx.ValueContext.GetStart().GetLine(),
 			"",
 			"NOT HANDLED",
+			"",
 		),
 	)
 
@@ -547,6 +647,7 @@ func (l *DaedalusStatefulListener) DidFindMemberVarStringLiteral(list *[]StringL
 						ass.ExpressionBlock().GetStart().GetLine(),
 						efs.NameNode().GetText()+"."+field,
 						"",
+						"",
 					),
 				)
 				return true
@@ -558,6 +659,7 @@ func (l *DaedalusStatefulListener) DidFindMemberVarStringLiteral(list *[]StringL
 						l.source,
 						ass.ExpressionBlock().GetStart().GetLine(),
 						efs.NameNode().GetText()+"."+field,
+						"",
 						"",
 					),
 				)

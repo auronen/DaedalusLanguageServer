@@ -119,6 +119,7 @@ func (l *DaedalusTranslationStatefulListener) EnterStringLiteralValue(ctx *parse
 					ctx.ValueContext.GetStart().GetLine(),
 					fncCtx.AllFuncArgExpression()[2].GetText(),
 					"",
+					"",
 				),
 			)
 			return
@@ -135,6 +136,7 @@ func (l *DaedalusTranslationStatefulListener) EnterStringLiteralValue(ctx *parse
 					ctx.ValueContext.GetStart().GetLine(),
 					"",
 					fncName+" call.", // add a developer comment to tell translators/translation preparators in which function is the string used as a parameter
+					"",
 				),
 			)
 			return
@@ -182,6 +184,7 @@ func (l *DaedalusTranslationStatefulListener) EnterStringLiteralValue(ctx *parse
 				ctx.ValueContext.GetStart().GetLine(),
 				constCtx.NameNode().GetText(),
 				"",
+				"",
 			),
 		)
 		return
@@ -214,6 +217,7 @@ func (l *DaedalusTranslationStatefulListener) EnterStringLiteralValue(ctx *parse
 			ctx.ValueContext.GetStart().GetLine(),
 			"",
 			"NOT HANDLED",
+			"",
 		),
 	)
 
@@ -231,6 +235,7 @@ func (l *DaedalusTranslationStatefulListener) DidFindMemberVarStringLiteral(list
 						ass.ExpressionBlock().GetStart().GetLine(),
 						efs.NameNode().GetText()+"."+field,
 						"",
+						"",
 					),
 				)
 				return true
@@ -242,6 +247,7 @@ func (l *DaedalusTranslationStatefulListener) DidFindMemberVarStringLiteral(list
 						l.source,
 						ass.ExpressionBlock().GetStart().GetLine(),
 						efs.NameNode().GetText()+"."+field,
+						"",
 						"",
 					),
 				)

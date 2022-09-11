@@ -136,7 +136,7 @@ func newCSVentryFromStringLiteral(s StringLiteral) CSVentry {
 		id:                  "",
 		fuzzy:               "",
 		context:             trimQuotes(s.context),
-		translator_comments: "",
+		translator_comments: s.trComment,
 		developer_comments:  s.devComment,
 	}
 }
@@ -275,6 +275,19 @@ func csvWrite(entries []CSVentry, filename, lang string) error {
 
 // Generates one giant escaped csv file with all translatable strings
 func (h *LspHandler) generateAllCSV() {
+	//h.logger.Infof("src files %v", h.parsedKnownSrcFiles)
+	var what string
+	h.parsedKnownSrcFiles.m.Range(func(mapKey, any interface{}) bool {
+		key := mapKey.(string)
+		if strings.Contains(strings.ToLower(key), strings.ToLower("Gothic.src")) {
+			what = "Gothic"
+		} else if strings.Contains(strings.ToLower(key), strings.ToLower("Menu.src")) {
+			what = "Menu"
+		}
+		return true
+	})
+	h.logger.Infof("Generating %s", what)
+
 	entries := make([]CSVentry, 0, 200)
 
 	// everything
@@ -324,7 +337,9 @@ func (h *LspHandler) generateAllCSV() {
 	})
 
 	h.logger.Infof("Got %d lines", len(entries))
-	csvWrite(entries, "All", "cs")
+
+	//csvWrite(entries, "All", "cs")
+	csvWrite(entries, what, "translations")
 }
 
 // function black list
@@ -416,6 +431,11 @@ var FuncBlackList = []string{
 	"B_StartUseMob",
 	"B_PracticeCombat",
 	"B_StopUseMob",
+	"Hlp_StrCmp",
+	"VobShowVisual",
+	"SetVobVisual",
+	"SearchVobsByClass",
+	"MEM_SearchVobByName",
 }
 
 func IsBlacklisted(e string) bool {
@@ -482,15 +502,17 @@ type StringLiteral struct {
 	line       int
 	context    string
 	devComment string
+	trComment  string
 }
 
-func newStringLiteral(txt, source string, ln int, ctx, devCmnt string) StringLiteral {
+func newStringLiteral(txt, source string, ln int, ctx, devCmnt, trCmnt string) StringLiteral {
 	return StringLiteral{
 		text:       txt,
 		sourceFile: source,
 		line:       ln,
 		context:    ctx,
 		devComment: devCmnt,
+		trComment:  trCmnt,
 	}
 }
 
@@ -500,6 +522,7 @@ type SVM struct {
 	line       int
 	context    string
 	devComment string
+	trComment  string
 }
 
 func newSVM(txt, source string, ln int, ctx string) StringLiteral {
@@ -509,6 +532,7 @@ func newSVM(txt, source string, ln int, ctx string) StringLiteral {
 		line:       ln,
 		context:    ctx,
 		devComment: "",
+		trComment:  "",
 	}
 }
 
@@ -522,3 +546,29 @@ func (h *LspHandler) parseScripts() {
 
 }
 */
+
+type TranslationStringEntry struct {
+	name string
+	RUS  string
+	ENG  string
+	GER  string
+	POL  string
+	ROU  string
+	ITA  string
+	CZE  string
+	ESP  string
+}
+
+func NewTranslationStringEntry(str, ru, en, de, pl, ro, it, cs, es string) TranslationStringEntry {
+	return TranslationStringEntry{
+		name: str,
+		RUS:  ru,
+		ENG:  en,
+		GER:  de,
+		POL:  pl,
+		ROU:  ro,
+		ITA:  it,
+		CZE:  cs,
+		ESP:  es,
+	}
+}
