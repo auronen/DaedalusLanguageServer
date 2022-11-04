@@ -33,6 +33,15 @@ Order of operations:
 
 */
 
+type simpleCSVentry struct {
+	context string
+	text    string
+}
+
+func (c *simpleCSVentry) GetEscapedSimpleCSV() string {
+	return "\"" + c.context + "\",\"" + c.text + "\""
+}
+
 // "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
 type CSVentry struct {
 	location            string // {git repo relative path}:{line number}
@@ -183,6 +192,40 @@ func newCSVentryFromConstArraySymbol(sym symbol.ConstantArray) []CSVentry {
 	return entries
 }
 
+// TODO
+func parseText(in string) string {
+	if strings.Contains(in, "\"") {
+		return strings.ReplaceAll(in, "\"", "")
+	}
+	return "" // if it is not a string literal, return empty string
+}
+
+func newsimpleCSVentryTranslationStringEntry(s TranslationStringEntry, id int) simpleCSVentry {
+	var txt string
+	switch id {
+	case 0:
+		txt = parseText(s.RUS)
+	case 1:
+		txt = parseText(s.ENG)
+	case 2:
+		txt = parseText(s.GER)
+	case 3:
+		txt = parseText(s.POL)
+	case 4:
+		txt = parseText(s.ROU)
+	case 5:
+		txt = parseText(s.ITA)
+	case 6:
+		txt = parseText(s.CZE)
+	case 7:
+		txt = parseText(s.ESP)
+	}
+	return simpleCSVentry{
+		context: s.name,
+		text:    txt,
+	}
+}
+
 /*
 func (e CSVentry) getValue() []string {
 	return []string{e.location,
@@ -269,6 +312,29 @@ func csvWrite(entries []CSVentry, filename, lang string) error {
 
 	for _, entry := range entries {
 		writer.WriteString(entry.GetEscapedCSV() + "\n")
+	}
+	return nil
+}
+
+// write the CSVentry slice as an escaped CSV file with the filename: `filename`_`lang`.csv
+func simplecsvWrite(entries []simpleCSVentry, filename, lang string) error {
+
+	path, _ := os.Getwd()
+
+	_ = os.MkdirAll(filepath.Join(path, ".translations"), os.ModePerm)
+	pth := filepath.Join(path, ".translations", filename+"_"+lang+".csv")
+	file, err := os.Create(pth)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	defer writer.Flush()
+
+	for _, entry := range entries {
+		writer.WriteString(entry.GetEscapedSimpleCSV() + "\n")
 	}
 	return nil
 }
@@ -468,6 +534,29 @@ func isBlacklisted_constArray(e string) bool {
 	return false
 }
 
+func (h *LspHandler) generatezPECSV() {
+	//TODO
+	h.logger.Infof("Generating Autorun\n")
+
+	var entries [8][]simpleCSVentry
+	for i := 0; i < 8; i++ {
+		entries[i] = make([]simpleCSVentry, 0, 20)
+	}
+
+	for _, res := range h.parsedDocuments.parseResults {
+		for _, strLit := range res.UnionLocalized {
+			for i := 0; i < 8; i++ {
+				entries[i] = append(entries[i], newsimpleCSVentryTranslationStringEntry(strLit, i))
+			}
+		}
+	}
+	langs := []string{"ru", "en", "de", "pl", "ro", "it", "cs", "es"}
+
+	for i := 0; i < 8; i++ {
+		simplecsvWrite(entries[i], "autorun", langs[i])
+	}
+}
+
 type Comment struct {
 	text string
 	line int
@@ -559,9 +648,9 @@ type TranslationStringEntry struct {
 	ESP  string
 }
 
-func NewTranslationStringEntry(str, ru, en, de, pl, ro, it, cs, es string) TranslationStringEntry {
+func NewTranslationStringEntry(ctx, ru, en, de, pl, ro, it, cs, es string) TranslationStringEntry {
 	return TranslationStringEntry{
-		name: str,
+		name: ctx,
 		RUS:  ru,
 		ENG:  en,
 		GER:  de,

@@ -210,6 +210,7 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 				ExecuteCommandProvider: &lsp.ExecuteCommandOptions{
 					Commands: []string{
 						DlsAll,
+						DlsAutorun,
 					},
 				},
 			},

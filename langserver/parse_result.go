@@ -22,6 +22,7 @@ type ParseResult struct {
 	GlobalDialogues []Dialogue
 	StringLiterals  []StringLiteral
 	SVMs            []SVM
+	UnionLocalized  []TranslationStringEntry
 }
 
 func (r *ParseResult) CountSymbols() int64 {

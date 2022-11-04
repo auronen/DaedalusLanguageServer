@@ -56,6 +56,7 @@ func NewDaedalusStatefulListener(source string, knownSymbols SymbolProvider) *Da
 		StringLiterals:  []StringLiteral{},
 		SVMs:            []SVM{},
 		//	newConstantNames: make(map[string]int),
+		UnionLocalized: []TranslationStringEntry{},
 	}
 }
 
@@ -371,6 +372,53 @@ func (l *DaedalusStatefulListener) findAI_OutputFuncCallsStatements(root antlr.T
 	return foundCalls
 }
 
+func (l *DaedalusStatefulListener) EnterFuncCall(ctx *parser.FuncCallContext) {
+
+	funcName := ctx.NameNode().GetText()
+
+	if strings.EqualFold(funcName, "Str_GetLocalizedString") {
+		l.UnionLocalized = append(l.UnionLocalized, NewTranslationStringEntry(
+			l.getContext(ctx),
+			ctx.AllFuncArgExpression()[0].GetText(),
+			ctx.AllFuncArgExpression()[1].GetText(),
+			ctx.AllFuncArgExpression()[2].GetText(),
+			ctx.AllFuncArgExpression()[3].GetText(),
+			"",
+			"",
+			"",
+			"",
+		))
+	} else if strings.EqualFold(funcName, "Str_GetLocalizedStringEx") {
+		l.UnionLocalized = append(l.UnionLocalized, NewTranslationStringEntry(
+			l.getContext(ctx),
+			ctx.AllFuncArgExpression()[0].GetText(),
+			ctx.AllFuncArgExpression()[1].GetText(),
+			ctx.AllFuncArgExpression()[2].GetText(),
+			ctx.AllFuncArgExpression()[3].GetText(),
+			ctx.AllFuncArgExpression()[4].GetText(),
+			ctx.AllFuncArgExpression()[5].GetText(),
+			ctx.AllFuncArgExpression()[6].GetText(),
+			ctx.AllFuncArgExpression()[7].GetText(),
+		))
+	}
+}
+
+func (l *DaedalusStatefulListener) getContext(root antlr.Tree) string {
+	if root == nil {
+		return ""
+	}
+	var inst, memvar string
+	if ass, ok := root.GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
+		inst = ass.NameNode().GetText()
+	}
+
+	if ass, ok := root.GetParent().GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
+		memvar = ass.Reference().GetText()
+	}
+
+	return inst + "." + memvar
+}
+
 /*
 func (l *DaedalusStatefulListener) findStr_GetLocalizedStringEx(root antlr.Tree) []Dialogue {
 	var foundCalls []Dialogue
@@ -408,7 +456,6 @@ var NewConstantNames = make(map[string]int)
 //NewConstantNames = make(map[string]int)
 
 func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLiteralValueContext) {
-
 	// Filter Ikarus, Lego, GFA and AFSP and various files TODO: Introduce config file for this
 	if strings.Contains(strings.ToLower(l.source), strings.ToLower("LeGo")) ||
 		strings.Contains(strings.ToLower(l.source), strings.ToLower("ikarus")) ||
