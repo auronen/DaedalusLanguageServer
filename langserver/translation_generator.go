@@ -5,6 +5,7 @@ package langserver
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +15,8 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/integralist/go-findroot/find"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/symbol"
+	lsp "go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
 /* What has to be done
@@ -660,4 +663,39 @@ func NewTranslationStringEntry(ctx, ru, en, de, pl, ro, it, cs, es string) Trans
 		CZE:  cs,
 		ESP:  es,
 	}
+}
+
+// test lsp server's ability to edit code
+func (h *LspHandler) editCode(ctx context.Context) {
+
+	// create a map of text edits
+	edits := make(map[uri.URI][]lsp.TextEdit)
+
+	// generate test edits to
+	for key, _ := range h.parsedDocuments.parseResults {
+		//h.logger.Infof("key: %s\n URI: %s\n", i, uri.File(pr.Source))
+
+		edits[uri.File(key)] = []lsp.TextEdit{
+			lsp.TextEdit{
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line:      0,
+						Character: 0,
+					},
+					End: lsp.Position{
+						Line:      0,
+						Character: 0,
+					},
+				},
+				NewText: "TEST_ED",
+			},
+		}
+
+	}
+
+	// send the request to the editor
+	h.conn.Notify(ctx, lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
+		Edit: lsp.WorkspaceEdit{
+			Changes: edits,
+		}})
 }

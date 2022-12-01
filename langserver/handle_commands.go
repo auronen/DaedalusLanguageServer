@@ -12,6 +12,7 @@ const (
 	//DlsDialogues string = "daedalus.dls-dialogues"
 	DlsAll     string = "daedalus.dls-all"
 	DlsAutorun string = "daedalus.dls-autorun"
+	DlsEdit    string = "daedalus.dls-edit"
 )
 
 func (h *LspHandler) handleCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
@@ -24,6 +25,11 @@ func (h *LspHandler) handleCommand(req dls.RpcContext, params lsp.ExecuteCommand
 	} else if params.Command == DlsAutorun {
 		h.logger.Infof("Generating autorun scripts")
 		h.generatezPECSV()
+		h.logger.Infof("Done")
+		return nil
+	} else if params.Command == DlsEdit {
+		h.logger.Infof("Testing code insert")
+		h.editCode(req.Context())
 		h.logger.Infof("Done")
 		return nil
 	}
