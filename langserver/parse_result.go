@@ -23,6 +23,7 @@ type ParseResult struct {
 	StringLiterals  []StringLiteral
 	SVMs            []SVM
 	UnionLocalized  []TranslationStringEntry
+	StringLocations map[string][]SymbolPosition
 }
 
 func (r *ParseResult) CountSymbols() int64 {

@@ -31,6 +31,7 @@ type DaedalusStatefulListener struct {
 	StringLiterals  []StringLiteral
 	SVMs            []SVM
 	UnionLocalized  []TranslationStringEntry
+	StringLocations map[string][]SymbolPosition
 }
 
 type SymbolProvider interface {
@@ -56,7 +57,8 @@ func NewDaedalusStatefulListener(source string, knownSymbols SymbolProvider) *Da
 		StringLiterals:  []StringLiteral{},
 		SVMs:            []SVM{},
 		//	newConstantNames: make(map[string]int),
-		UnionLocalized: []TranslationStringEntry{},
+		UnionLocalized:  []TranslationStringEntry{},
+		StringLocations: map[string][]SymbolPosition{},
 	}
 }
 
@@ -636,12 +638,21 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 
 	// string constants
 	if constCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.ConstValueDefContext); ok {
+
+		symbolID := constCtx.NameNode().GetText()
+		line := ctx.ValueContext.GetStart().GetLine()
+		start := ctx.ValueContext.GetStart().GetColumn()
+		end := start + len(content)
+		document := l.source
+
+		l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+
 		l.StringLiterals = append(l.StringLiterals,
 			newStringLiteral(
 				content,
-				l.source,
-				ctx.ValueContext.GetStart().GetLine(),
-				constCtx.NameNode().GetText(),
+				document,
+				line,
+				symbolID,
 				"",
 				"",
 			),

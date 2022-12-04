@@ -85,7 +85,8 @@ func (m *parseResultsManager) ParseScript(source, content string) *ParseResult {
 		StringLiterals:  listener.StringLiterals,
 		SVMs:            listener.SVMs,
 
-		UnionLocalized: listener.UnionLocalized,
+		UnionLocalized:  listener.UnionLocalized,
+		StringLocations: listener.StringLocations,
 	}
 	return result
 }

@@ -6,6 +6,7 @@ package langserver
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -317,6 +318,39 @@ func csvWrite(entries []CSVentry, filename, lang string) error {
 		writer.WriteString(entry.GetEscapedCSV() + "\n")
 	}
 	return nil
+}
+
+func csvRead(filename, lang string) (translatedStrings []TranslatedString, err error) {
+	// create path
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return
+	}
+	path := filepath.Join(repoRoot, ".translations", lang, filename)
+
+	fmt.Fprintf(os.Stderr, "%s\n", path)
+	filepath, err := os.Open(path)
+
+	file, err := os.Open(filepath.Name())
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	csvReader := csv.NewReader(file)
+
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return
+	}
+
+	translatedStrings = make([]TranslatedString, 0, 200)
+
+	for _, r := range records {
+		// "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
+		translatedStrings = append(translatedStrings, newTranslatedString(r[5], r[2]))
+	}
+	return
 }
 
 // write the CSVentry slice as an escaped CSV file with the filename: `filename`_`lang`.csv
@@ -671,31 +705,75 @@ func (h *LspHandler) editCode(ctx context.Context) {
 	// create a map of text edits
 	edits := make(map[uri.URI][]lsp.TextEdit)
 
-	// generate test edits to
-	for key, _ := range h.parsedDocuments.parseResults {
-		//h.logger.Infof("key: %s\n URI: %s\n", i, uri.File(pr.Source))
-
-		edits[uri.File(key)] = []lsp.TextEdit{
-			lsp.TextEdit{
-				Range: lsp.Range{
-					Start: lsp.Position{
-						Line:      0,
-						Character: 0,
-					},
-					End: lsp.Position{
-						Line:      0,
-						Character: 0,
-					},
-				},
-				NewText: "TEST_ED",
-			},
-		}
-
+	h.logger.Infof("Creating edits")
+	ts, err := csvRead("Text_Constants.csv", "cs")
+	if err != nil {
+		h.logger.Errorf("Error: %s", err)
 	}
 
+	for _, entry := range ts {
+		//h.logger.Infof("%s - %s", entry.id, entry.content)
+		for _, res := range h.parsedDocuments.parseResults {
+			if positions, ok := res.StringLocations[entry.id]; ok {
+				for _, pos := range positions {
+					edits[uri.File(pos.document)] = append(edits[uri.File(pos.document)], lsp.TextEdit{
+						Range: lsp.Range{
+							Start: lsp.Position{
+								Line:      uint32(pos.line - 1),
+								Character: uint32(pos.start),
+							},
+							End: lsp.Position{
+								Line:      uint32(pos.line - 1),
+								Character: uint32(pos.end),
+							},
+						},
+						NewText: "\"" + entry.content + "\"",
+					})
+				}
+			}
+		}
+	}
+	h.logger.Infof("Done with edits")
+
+	h.logger.Infof("%v", edits)
+
+	var response lsp.ApplyWorkspaceEditResponse
+
 	// send the request to the editor
-	h.conn.Notify(ctx, lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
+	h.conn.Call(ctx, lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
 		Edit: lsp.WorkspaceEdit{
 			Changes: edits,
-		}})
+		}}, response)
+}
+
+func (h *LspHandler) createEdits(edits map[uri.URI][]lsp.TextEdit) {
+
+}
+
+type SymbolPosition struct {
+	document string
+	line     int
+	start    int
+	end      int
+}
+
+func newSymbolPosition(doc string, ln, st, en int) SymbolPosition {
+	return SymbolPosition{
+		document: doc,
+		line:     ln,
+		start:    st,
+		end:      en,
+	}
+}
+
+type TranslatedString struct {
+	id      string
+	content string
+}
+
+func newTranslatedString(id, content string) TranslatedString {
+	return TranslatedString{
+		id:      id,
+		content: content,
+	}
 }
