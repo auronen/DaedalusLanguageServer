@@ -547,6 +547,14 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 			return
 		}
 		if strings.EqualFold(fncName, "Info_AddChoice") {
+			symbolID := fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
+			line := ctx.ValueContext.GetStart().GetLine()
+			start := ctx.ValueContext.GetStart().GetColumn()
+			end := start + len(content)
+			document := l.source
+
+			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+
 			l.StringLiterals = append(l.StringLiterals,
 				newStringLiteral(
 					content,
@@ -663,6 +671,15 @@ func (l *DaedalusStatefulListener) EnterStringLiteralValue(ctx *parser.StringLit
 	// SVMs
 	if inst, ok := ctx.GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
 		if strings.EqualFold(inst.ParentReference().GetText(), "C_SVM") {
+
+			symbolID := content
+			document := l.source
+			line := ctx.ValueContext.GetStart().GetLine()
+			start := ctx.ValueContext.GetStart().GetColumn()
+			end := start + len(content)
+
+			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+
 			l.SVMs = append(l.SVMs, SVM(newSVM(
 				"",
 				l.source,
@@ -698,6 +715,15 @@ func (l *DaedalusStatefulListener) DidFindMemberVarStringLiteral(list *[]StringL
 	if strings.EqualFold(ass.Reference().GetText(), field) {
 		if strings.Contains(ass.ExpressionBlock().GetText(), "\"") {
 			if efs, ok := ass.GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
+
+				symbolID := efs.NameNode().GetText() + "." + field
+				line := ass.ExpressionBlock().GetStart().GetLine()
+				start := ass.ExpressionBlock().GetStart().GetColumn()
+				end := start + len(ass.ExpressionBlock().GetText())
+				document := l.source
+
+				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+
 				*list = append(*list,
 					newStringLiteral(
 						ass.ExpressionBlock().GetText(),
@@ -711,6 +737,15 @@ func (l *DaedalusStatefulListener) DidFindMemberVarStringLiteral(list *[]StringL
 				return true
 				// also check in prototypes
 			} else if efs, ok := ass.GetParent().GetParent().GetParent().(*parser.PrototypeDefContext); ok {
+
+				symbolID := efs.NameNode().GetText() + "." + field
+				line := ass.ExpressionBlock().GetStart().GetLine()
+				start := ass.ExpressionBlock().GetStart().GetColumn()
+				end := start + len(ass.ExpressionBlock().GetText())
+				document := l.source
+
+				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+
 				*list = append(*list,
 					newStringLiteral(
 						ass.ExpressionBlock().GetText(),
