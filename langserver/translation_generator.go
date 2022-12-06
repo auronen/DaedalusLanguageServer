@@ -1,5 +1,5 @@
 /*
-	Functionality related to the translation feature
+Functionality related to the translation feature
 */
 package langserver
 
@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -100,24 +101,24 @@ func trimQuotes(input string) string {
 }
 
 /*
-func newCSVentryFromConstSymbol(symbol symbol.Constant) CSVentry {
-	line := symbol.Definition().Start.Line
-	// TODO: Do not ignore the error!
-	file, _ := getRepoRelativePath(symbol.Source())
-	return CSVentry{
-		path:       file,
-		lineNumber: line,
+	func newCSVentryFromConstSymbol(symbol symbol.Constant) CSVentry {
+		line := symbol.Definition().Start.Line
+		// TODO: Do not ignore the error!
+		file, _ := getRepoRelativePath(symbol.Source())
+		return CSVentry{
+			path:       file,
+			lineNumber: line,
 
-		location:            file + ":" + fmt.Sprint(line),
-		source:              trimQuotes(symbol.Value),
-		target:              "",
-		id:                  "",
-		fuzzy:               "",
-		context:             symbol.NameValue,
-		translator_comments: "",
-		developer_comments:  "",
+			location:            file + ":" + fmt.Sprint(line),
+			source:              trimQuotes(symbol.Value),
+			target:              "",
+			id:                  "",
+			fuzzy:               "",
+			context:             symbol.NameValue,
+			translator_comments: "",
+			developer_comments:  "",
+		}
 	}
-}
 */
 func newCSVentryFromDialogue(dia Dialogue) CSVentry {
 	// TODO: Do not ignore the error!
@@ -320,35 +321,45 @@ func csvWrite(entries []CSVentry, filename, lang string) error {
 	return nil
 }
 
-func csvRead(filename, lang string) (translatedStrings []TranslatedString, err error) {
+func csvReadLanguage(lang string) (translatedStrings []TranslatedString, err error) {
 	// create path
 	repoRoot, err := findRepoRoot()
 	if err != nil {
 		return
 	}
-	path := filepath.Join(repoRoot, ".translations", lang, filename)
+	path := filepath.Join(repoRoot, ".translations", lang)
 
-	fmt.Fprintf(os.Stderr, "%s\n", path)
-	filepath, err := os.Open(path)
-
-	file, err := os.Open(filepath.Name())
+	//fmt.Fprintf(os.Stderr, "%s\n", path)
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	csvReader := csv.NewReader(file)
-
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		return
+		fmt.Fprintf(os.Stderr, "Error occured while reading files: %s\n", err)
 	}
 
 	translatedStrings = make([]TranslatedString, 0, 200)
 
-	for _, r := range records {
-		// "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
-		translatedStrings = append(translatedStrings, newTranslatedString(r[5], r[2]))
+	for _, f := range files {
+		// skip subdirs
+		if f.IsDir() {
+			continue
+		}
+		file, err := os.Open(filepath.Join(path, f.Name()))
+
+		if err != nil {
+			break
+		}
+		defer file.Close()
+
+		csvReader := csv.NewReader(file)
+
+		records, er := csvReader.ReadAll()
+		if er != nil {
+			break
+		}
+
+		for _, r := range records {
+			// "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
+			translatedStrings = append(translatedStrings, newTranslatedString(r[5], r[2]))
+		}
 	}
 	return
 }
@@ -706,7 +717,7 @@ func (h *LspHandler) editCode(ctx context.Context) {
 	edits := make(map[uri.URI][]lsp.TextEdit)
 
 	h.logger.Infof("Creating edits")
-	ts, err := csvRead("Text_Constants.csv", "cs")
+	ts, err := csvReadLanguage("cs")
 	if err != nil {
 		h.logger.Errorf("Error: %s", err)
 	}
@@ -730,26 +741,36 @@ func (h *LspHandler) editCode(ctx context.Context) {
 						NewText: "\"" + entry.content + "\"",
 					})
 				}
+
 			}
 		}
 	}
 	h.logger.Infof("Done with edits")
 
-	h.logger.Infof("%v", edits)
+	h.logger.Infof("Number of edits: %d", len(edits))
+	for key, _ := range edits {
+		h.logger.Infof("%v - %d", key, len(edits[key]))
+	}
+	//h.logger.Infof("%v", edits)
 
 	var response lsp.ApplyWorkspaceEditResponse
 
 	// send the request to the editor
-	h.conn.Call(ctx, lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
+	id, _ := h.conn.Call(context.Background(), lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
 		Edit: lsp.WorkspaceEdit{
 			Changes: edits,
-		}}, response)
+		}}, &response)
+
+	h.logger.Infof("Done with function")
 }
 
+/*
 func (h *LspHandler) createEdits(edits map[uri.URI][]lsp.TextEdit) {
 
 }
+*/
 
+// TODO: rename this to something reasonable and maybe try to merge it with StringLiterals
 type SymbolPosition struct {
 	document string
 	line     int
