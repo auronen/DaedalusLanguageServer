@@ -722,7 +722,8 @@ func (h *LspHandler) editCode(ctx context.Context) {
 		h.logger.Errorf("Error: %s", err)
 	}
 
-	for _, entry := range ts {
+	for i, entry := range ts {
+		edits2 := make([]lsp.TextDocumentEdit, 0, 50)
 		//h.logger.Infof("%s - %s", entry.id, entry.content)
 		for _, res := range h.parsedDocuments.parseResults {
 			if positions, ok := res.StringLocations[entry.id]; ok {
@@ -740,28 +741,69 @@ func (h *LspHandler) editCode(ctx context.Context) {
 						},
 						NewText: "\"" + entry.content + "\"",
 					})
+
+					// second way of doing things
+					edits2 = append(edits2, lsp.TextDocumentEdit{
+						TextDocument: lsp.OptionalVersionedTextDocumentIdentifier{
+							TextDocumentIdentifier: lsp.TextDocumentIdentifier{
+								URI: uri.File(pos.document),
+							},
+							Version: lsp.NewVersion(10),
+						},
+						Edits: []lsp.TextEdit{
+							lsp.TextEdit{
+								Range: lsp.Range{
+									Start: lsp.Position{
+										Line:      uint32(pos.line - 1),
+										Character: uint32(pos.start),
+									},
+									End: lsp.Position{
+										Line:      uint32(pos.line - 1),
+										Character: uint32(pos.end),
+									},
+								},
+								NewText: "\"" + entry.content + "\"",
+							},
+						},
+					})
 				}
 
 			}
 		}
+
+		h.logger.Infof("Done with edits %d", i)
+
+		var response lsp.ApplyWorkspaceEditResponse
+
+		// send the request to the editor
+		/*id, _ := */
+		h.conn.Call(context.Background(), lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
+			Edit: lsp.WorkspaceEdit{
+				//Changes: edits,
+				DocumentChanges: edits2,
+			}}, &response)
+
 	}
-	h.logger.Infof("Done with edits")
+	/*
+		h.logger.Infof("Done with edits")
 
-	h.logger.Infof("Number of edits: %d", len(edits))
-	for key, _ := range edits {
-		h.logger.Infof("%v - %d", key, len(edits[key]))
-	}
-	//h.logger.Infof("%v", edits)
+		h.logger.Infof("Number of edits: %d", len(edits))
+		for key, _ := range edits {
+			h.logger.Infof("%v - %d", key, len(edits[key]))
+		}
+		//h.logger.Infof("%v", edits)
 
-	var response lsp.ApplyWorkspaceEditResponse
+		var response lsp.ApplyWorkspaceEditResponse
 
-	// send the request to the editor
-	id, _ := h.conn.Call(context.Background(), lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
-		Edit: lsp.WorkspaceEdit{
-			Changes: edits,
-		}}, &response)
+		// send the request to the editor
+		h.conn.Call(context.Background(), lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
+			Edit: lsp.WorkspaceEdit{
+				//Changes: edits,
+				DocumentChanges: edits2,
+			}}, &response)
 
-	h.logger.Infof("Done with function")
+		h.logger.Infof("Done with function")
+	*/
 }
 
 /*
