@@ -60,6 +60,19 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string) *Pa
 	return result
 }
 
+// ParseScriptsTranslations
+func (m *parseResultsManager) ParseScriptsTranslations(source, content string) *ParseResult {
+	translating := NewDaedalusTranslatingListener(source, m)
+
+	m.ParseScriptListener(source, content, translating, &SyntaxErrorListener{})
+
+	result := &ParseResult{
+		StringLocations: translating.StringLocations,
+		Source:          source,
+	}
+	return result
+}
+
 // ParseScriptListener ...
 func (m *parseResultsManager) ParseScriptListener(source, content string, listener parser.DaedalusListener, errListener antlr.ErrorListener) {
 	m.parser.Parse(source, content, listener, errListener)

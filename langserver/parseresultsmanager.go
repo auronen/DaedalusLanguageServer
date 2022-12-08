@@ -549,6 +549,67 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) (
 	return results, nil
 }
 
+func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFile string) ([]*ParseResult, error) {
+	resolvedPaths, err := m.resolveSrcPaths(srcFile, filepath.Dir(srcFile))
+	if err != nil {
+		return nil, err
+	}
+	m.logger.Infof("Parsing %q for translation. This might take a while.", srcFile)
+
+	results := make([]*ParseResult, 0, len(resolvedPaths))
+
+	chanPaths := make(chan string, len(resolvedPaths))
+	for _, r := range resolvedPaths {
+		chanPaths <- r
+	}
+	close(chanPaths)
+
+	var wg sync.WaitGroup
+	numWorkers := m.getConcurrency()
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+
+			buf := bufferPool.Get().(*bytes.Buffer)
+			defer bufferPool.Put(buf)
+
+			decoder := m.decoderPool.Get().(*encoding.Decoder)
+			defer m.decoderPool.Put(decoder)
+
+			for r := range chanPaths {
+				if ctx.Err() != nil {
+					return
+				}
+				f, err := os.Open(r)
+				if err != nil {
+					continue
+				}
+				decoder.Reset()
+				translated := decoder.Reader(f)
+				buf.Reset()
+				_, err = buf.ReadFrom(translated)
+				f.Close()
+				if err != nil {
+					continue
+				}
+
+				parsed := m.ParseScriptsTranslations(r, buf.String())
+
+				m.mtx.Lock()
+				m.parseResults[parsed.Source] = parsed
+				results = append(results, parsed)
+				m.mtx.Unlock()
+			}
+		}(&wg)
+	}
+
+	wg.Wait()
+
+	m.logger.Infof("Done parsing %q: %d scripts. (translation)", srcFile, len(results))
+	return results, nil
+}
+
 func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 	buf := bufferPool.Get().(*bytes.Buffer)
 	defer bufferPool.Put(buf)

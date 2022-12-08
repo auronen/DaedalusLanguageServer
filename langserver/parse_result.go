@@ -20,6 +20,9 @@ type ParseResult struct {
 	SyntaxErrors    []SyntaxError
 
 	lastModifiedAt time.Time
+
+	// Translation related fields
+	StringLocations map[string][]SymbolPosition
 }
 
 func (r *ParseResult) CountSymbols() int64 {

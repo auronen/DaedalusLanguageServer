@@ -85,10 +85,6 @@ func (h *LspHandler) OnConfigChanged(handler func(config LspConfig)) {
 	h.onConfigChangedHandlers = append(h.onConfigChangedHandlers, handler)
 }
 
-func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
-	return req.Reply(req.Context(), nil, nil)
-}
-
 func (h *LspHandler) onInitialized() {
 	h.handlers.Register(lsp.MethodTextDocumentCompletion, dls.MakeHandler(h.handleTextDocumentCompletion))
 	h.handlers.Register(lsp.MethodTextDocumentDefinition, dls.MakeHandler(h.handleTextDocumentDefinition))
@@ -233,7 +229,12 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 			},
 			Capabilities: lsp.ServerCapabilities{
 				ExecuteCommandProvider: lsp.ExecuteCommandOptions{
-					Commands: []string{CommandSetupWorkspace},
+					Commands: []string{
+						CommandSetupWorkspace,
+						CommandTranslateAll,
+						CommandTranslateAutorun,
+						CommandTranslateSubstitute,
+					},
 				},
 				CompletionProvider: lsp.CompletionOptions{
 					TriggerCharacters: []string{"."},

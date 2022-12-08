@@ -33,6 +33,41 @@ type LspWorkspace struct {
 	cancelWorkspaceCtx context.CancelFunc
 }
 
+func (ws *LspWorkspace) parseGameAndMenuForTranslation(config LspConfig) {
+	for _, v := range config.ProjectFiles {
+		if v != "Gothic.src" {
+			continue
+		}
+		var err error
+		full := v
+		if filepath.IsAbs(full) || strings.ContainsAny(full, "\\/") {
+
+			if _, err := os.Stat(full); err != nil {
+				ws.logger.Errorf("Error user-define project file %s: %v", full, err)
+				continue
+			}
+		}
+		/*
+			else {
+				full, err = findPathAnywhereUpToRoot(wd, v)
+			}
+		*/
+		if err != nil {
+			ws.logger.Debugf("Did not parse %q: %v", v, err)
+			continue
+		}
+		if ws.parsedKnownSrcFiles.Contains(full) {
+			continue
+		}
+		ws.parsedKnownSrcFiles.Store(full)
+		_, err = ws.parsedDocuments.ParseSourceTranslation(ws.workspaceCtx, full)
+		if err != nil {
+			ws.logger.Errorf("Error parsing %s: %v", full, err)
+			continue
+		}
+	}
+}
+
 // TODO: We need to figure out a better way to handle workspaces.
 // We might have to separate the parsers for Gothic/Music/SFX/VFX/...
 func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.DidOpenTextDocumentParams, config LspConfig) {

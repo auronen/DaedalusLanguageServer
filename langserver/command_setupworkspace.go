@@ -11,8 +11,6 @@ import (
 	lsp "github.com/kirides/DaedalusLanguageServer/protocol"
 )
 
-const CommandSetupWorkspace = "daedalus.dls-setup-workspace"
-
 type DirFs interface {
 	fs.FS
 	fs.ReadDirFS
@@ -53,7 +51,7 @@ func (h *LspWorkspace) commandSetupWorkspace(ws *LspWorkspace, argStr string) er
 	}
 
 	targetDir := filepath.Join(ws.path, ".dls", "externals")
-	err := os.MkdirAll(targetDir, 0640)
+	err := os.MkdirAll(targetDir, os.ModePerm /*0640*/)
 	if err != nil && !os.IsExist(err) {
 		h.logger.Errorf("Error creating directory %q. %v", targetDir, err)
 		return nil
