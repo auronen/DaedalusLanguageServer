@@ -16,10 +16,11 @@ const (
 func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
 	if params.Command == CommandTranslateSubstitute {
 		h.logger.Infof("Substitution started")
+
 		for _, ws := range h.workspaces {
 			ws.parseGameAndMenuForTranslation(h.config)
 		}
-		failedFiles := h.substituteTranslation(req.Context())
+		failedFiles := h.substituteTranslation()
 		h.logger.Infof("Substitution done")
 		h.logger.Infof("Files failed to substitute (%d files)", len(failedFiles))
 		for _, f := range failedFiles {

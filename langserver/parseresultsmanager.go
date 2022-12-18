@@ -549,7 +549,7 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) (
 	return results, nil
 }
 
-func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFile string) ([]*ParseResult, error) {
+func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFile string, ws LspWorkspace) ([]*ParseResult, error) {
 	resolvedPaths, err := m.resolveSrcPaths(srcFile, filepath.Dir(srcFile))
 	if err != nil {
 		return nil, err
@@ -563,6 +563,8 @@ func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFil
 		chanPaths <- r
 	}
 	close(chanPaths)
+	// TODO: Read the config here!!! only once
+	conf := initTranslationConfig(ws)
 
 	var wg sync.WaitGroup
 	numWorkers := m.getConcurrency()
@@ -594,7 +596,7 @@ func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFil
 					continue
 				}
 
-				parsed := m.ParseScriptsTranslations(r, buf.String())
+				parsed := m.ParseScriptsTranslations(r, buf.String(), conf)
 
 				m.mtx.Lock()
 				m.parseResults[parsed.Source] = parsed

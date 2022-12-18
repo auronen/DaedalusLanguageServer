@@ -35,7 +35,8 @@ type LspWorkspace struct {
 
 func (ws *LspWorkspace) parseGameAndMenuForTranslation(config LspConfig) {
 	for _, v := range config.ProjectFiles {
-		if v != "Gothic.src" {
+		// TODO: Only does Gothic.dat for now, add Menu.dat also
+		if !strings.Contains(v, "Gothic.src") {
 			continue
 		}
 		var err error
@@ -56,11 +57,12 @@ func (ws *LspWorkspace) parseGameAndMenuForTranslation(config LspConfig) {
 			ws.logger.Debugf("Did not parse %q: %v", v, err)
 			continue
 		}
+
 		if ws.parsedKnownSrcFiles.Contains(full) {
 			continue
 		}
 		ws.parsedKnownSrcFiles.Store(full)
-		_, err = ws.parsedDocuments.ParseSourceTranslation(ws.workspaceCtx, full)
+		_, err = ws.parsedDocuments.ParseSourceTranslation(ws.workspaceCtx, full, *ws)
 		if err != nil {
 			ws.logger.Errorf("Error parsing %s: %v", full, err)
 			continue

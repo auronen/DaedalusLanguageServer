@@ -61,8 +61,8 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string) *Pa
 }
 
 // ParseScriptsTranslations
-func (m *parseResultsManager) ParseScriptsTranslations(source, content string) *ParseResult {
-	translating := NewDaedalusTranslatingListener(source, m)
+func (m *parseResultsManager) ParseScriptsTranslations(source, content string, conf translationConfiguration) *ParseResult {
+	translating := NewDaedalusTranslatingListener(source, conf)
 
 	m.ParseScriptListener(source, content, translating, &SyntaxErrorListener{})
 

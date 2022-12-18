@@ -3,6 +3,7 @@ package langserver
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 	"sort"
 	"strings"
@@ -34,7 +35,7 @@ func uniqueTranslatedStrings(input []TranslatedString) []TranslatedString {
 }
 
 // test lsp server's ability to edit code
-func (h *LspHandler) substituteTranslation(ctx context.Context) (failedFiles []string) {
+func (h *LspHandler) substituteTranslation() (failedFiles []string) {
 
 	h.logger.Infof("Creating edits")
 
@@ -50,12 +51,15 @@ func (h *LspHandler) substituteTranslation(ctx context.Context) (failedFiles []s
 	ts = uniqueTranslatedStrings(ts)
 	var response lsp.ApplyWorkspaceEditResponse
 
+	numOfEdits := 0
+
 	for _, w := range h.workspaces { // for every workspace
 		for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
 			edits := make(map[uri.URI][]lsp.TextEdit)
 			file := strings.TrimPrefix(res.Source, path.Join(path.Dir(w.path), path.Base(path.Dir(w.path))))
-			for _, entry := range ts { // for every entry in the translation files
+			for i, entry := range ts { // for every entry in the translation files
 				if positions, ok := res.StringLocations[entry.stringID]; ok {
+					ts[i].substituted = true
 					for _, pos := range positions {
 						if pos.quotes { // if it had quotes
 							edits[uri.File(file)] = append(edits[uri.File(file)], lsp.TextEdit{
@@ -95,13 +99,18 @@ func (h *LspHandler) substituteTranslation(ctx context.Context) (failedFiles []s
 			sort.Slice(edits[uri.File(file)], func(i, j int) bool {
 				return edits[uri.File(file)][i].Range.Start.Line < edits[uri.File(file)][j].Range.Start.Line
 			})
+			for key := range edits {
+				numOfEdits += len(edits[key])
+			}
 
 			// send the request to the editor
 			// one file at a time - I could not get the full workspace to be done in one request
-			h.conn.Call( /*context.Background()*/ ctx, lsp.MethodWorkspaceApplyEdit, lsp.ApplyWorkspaceEditParams{
-				Edit: lsp.WorkspaceEdit{
-					Changes: edits,
-				}}, &response)
+			h.conn.Call(context.Background(),
+				lsp.MethodWorkspaceApplyEdit,
+				lsp.ApplyWorkspaceEditParams{
+					Edit: lsp.WorkspaceEdit{
+						Changes: edits,
+					}}, &response)
 
 			if !response.Applied {
 				h.logger.Infof("%s", h.debugPrintEdits(edits))
@@ -111,6 +120,18 @@ func (h *LspHandler) substituteTranslation(ctx context.Context) (failedFiles []s
 			}
 		}
 	}
+
+	h.logger.Infof("Number of edits: %d", numOfEdits)
+
+	numberOfIDs := 0
+	for _, entry := range ts {
+		if !entry.substituted {
+			numberOfIDs++
+			fmt.Fprint(os.Stderr, entry.stringID+"\n")
+		}
+	}
+	h.logger.Infof("Number of string IDs not substituted: %d", numberOfIDs)
+
 	return failedFiles
 }
 

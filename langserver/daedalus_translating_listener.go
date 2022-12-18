@@ -13,17 +13,19 @@ import (
 // DaedalusTranslatingListener ...
 type DaedalusTranslatingListener struct {
 	parser.BaseDaedalusListener
+
 	StringLocations map[string][]SymbolPosition
-	Handled         map[string]bool
 	source          string
+
+	config translationConfiguration
 }
 
 // DaedalusTranslatingListener ...
-func NewDaedalusTranslatingListener(source string, knownSymbols SymbolProvider) *DaedalusTranslatingListener {
+func NewDaedalusTranslatingListener(source string, conf translationConfiguration) *DaedalusTranslatingListener {
 	return &DaedalusTranslatingListener{
 		StringLocations: map[string][]SymbolPosition{},
 		source:          source,
-		Handled:         make(map[string]bool),
+		config:          conf,
 	}
 }
 
@@ -51,7 +53,7 @@ func (l *DaedalusTranslatingListener) parseAI_OutputFuncCallStatements(root antl
 				document := l.source
 				line := funcCall.GetStart().GetLine()
 				var start, end int
-				//var content string
+				var content string
 
 				parserGetter, ok := root.(interface{ GetParser() antlr.Parser })
 				if !ok {
@@ -69,16 +71,13 @@ func (l *DaedalusTranslatingListener) parseAI_OutputFuncCallStatements(root antl
 					txt := h.GetText()
 					if strings.HasPrefix(txt, "//") {
 						start = h.GetColumn()
-						end = start + utf8.RuneCountInString(strings.TrimSpace(txt))
-						//	content = txt
-						//fmt.Fprintf(os.Stderr, "\n%s\nlength: %d", txt, end-start)
+						end = start + utf8.RuneCountInString(txt)
+						content = txt
 						break
 					}
 				}
 
-				//	fmt.Fprintf(os.Stderr, "\n[%s] %s { %d: %d-%d}\n", symbolID, content, line, start, end)
-
-				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end, false))
+				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, content, line, start, end, false))
 				//_ = newSymbolPosition(document+symbolID, line, start, end, false)
 			}
 		} else if s.GetChildCount() > 0 {
@@ -88,6 +87,9 @@ func (l *DaedalusTranslatingListener) parseAI_OutputFuncCallStatements(root antl
 }
 
 func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.StringLiteralValueContext) {
+	if l.isBlacklistedPath(l.source) {
+		return
+	}
 	//fmt.Fprintf(os.Stderr, "EnterStringLiterlValue\n")
 	/*
 		// Filter Ikarus, Lego, GFA and AFSP and various files TODO: Introduce config file for this
@@ -108,29 +110,61 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 			strings.Contains(strings.ToLower(l.source), strings.ToLower("GFA")) {
 			return
 		}
-
-		// known instances
-		if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[0]") { // C_ITEM and menus
-				return
-			}
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[1]") { // C_ITEM
-				return
-			}
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[2]") { // C_ITEM
-				return
-			}
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[3]") { // C_ITEM
-				return
-			}
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[4]") { // C_ITEM
-				return
-			}
-			if l.DidFindMemberVarStringLiteral(&l.StringLiterals, ass, "text[5]") { // C_ITEM
-				return
-			}
-		}
 	*/
+
+	//	// known instances
+	//	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[0]") { // C_ITEM and menus
+	//			return
+	//		}
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[1]") { // C_ITEM
+	//			return
+	//		}
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[2]") { // C_ITEM
+	//			return
+	//		}
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[3]") { // C_ITEM
+	//			return
+	//		}
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[4]") { // C_ITEM
+	//			return
+	//		}
+	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[5]") { // C_ITEM
+	//			return
+	//		}
+	//	}
+
+	// known instances
+	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
+		//	if ass, ok := ctx.GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "description") { // C_INFO and C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name") { // C_ITEM and C_NPC
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name[0]") { // name is actually a string array, some crazy people specify the first element :herosmile:
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[0]") { // C_ITEM and menus
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[1]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[2]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[3]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[4]") { // C_ITEM
+			return
+		}
+		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[5]") { // C_ITEM
+			return
+		}
+	}
 
 	content := ctx.ValueContext.GetText()
 	if len(content) <= 2 { // skip empty strings ""
@@ -171,10 +205,12 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		return
 	}
 
+	// string literals as a function call parameter
 	if fncCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.FuncCallContext); ok {
 		fncName := fncCtx.NameNode().GetText()
 
 		// Filter out TA_ and ZS_ functions, I think we can safely assume these will be used in the majority of script bases
+		// TODO: Add this to a filter also
 		if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("TA")) {
 			return
 		} else if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("ZS")) {
@@ -187,27 +223,16 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 			end := start + utf8.RuneCountInString(content)
 			document := l.source
 
-			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
-			/*
-				l.StringLiterals = append(l.StringLiterals,
-					newStringLiteral(
-						content,
-						l.source,
-						ctx.ValueContext.GetStart().GetLine(),
-						fncCtx.AllFuncArgExpression()[0].GetText()+"."+fncCtx.AllFuncArgExpression()[2].GetText(),
-						"",
-						"Info_AddChoice", // translation comment
-					),
-				)
-			*/
+			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end, "Info_AddChoice"))
+
 			return
 		}
 		// avoid black listed functions
-		// TODO: add user defined function blacklist
-		if IsBlacklisted(fncName) {
+		if l.isBlacklistedFunc(fncName) {
 			return
 		}
 		/*
+			// These are examples of functions I had to extract const strings from. TODO: Make it configurable from a .json file
 			else {
 				const_name := ""
 
@@ -250,38 +275,6 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		*/
 	}
 
-	// known instances
-	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
-		//	if ass, ok := ctx.GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "description") { // C_INFO and C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name") { // C_ITEM and C_NPC
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name[0]") { // name is actually a string array, some crazy people specify the first element :herosmile:
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[0]") { // C_ITEM and menus
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[1]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[2]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[3]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[4]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[5]") { // C_ITEM
-			return
-		}
-	}
-
 	// string constants
 	if constCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.ConstValueDefContext); ok {
 
@@ -291,19 +284,8 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		end := start + utf8.RuneCountInString(content)
 		document := l.source
 
-		l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
-		/*
-			l.StringLiterals = append(l.StringLiterals,
-				newStringLiteral(
-					content,
-					document,
-					line,
-					symbolID,
-					"",
-					"",
-				),
-			)
-		*/
+		l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end))
+
 		return
 	}
 
@@ -328,29 +310,19 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 				return
 			}
 			hidden := common.GetHiddenTokensToRight(ctx.GetParent().GetParent().GetParent().GetParent().(*parser.StatementContext).GetStop().GetTokenIndex()+1 /* + 1 -> skipping the semicolon :) */, parser.COMMENTS)
-			//var cntnt string
+			var cntnt string
 			for _, h := range hidden {
 				txt := h.GetText()
 				if strings.HasPrefix(txt, "//") {
 					start = h.GetColumn()
 					end = start + utf8.RuneCountInString(strings.TrimSpace(txt))
-					//		cntnt = txt
+					cntnt = txt
 					//fmt.Fprintf(os.Stderr, "\n%s\nlength: %d", txt, end-start)
 					break
 				}
 			}
 
-			//fmt.Fprintf(os.Stderr, "\n[%s] %s { %d: %d-%d}\n", symbolID, cntnt, line, start, end)
-
-			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end, false))
-			/*
-				l.SVMs = append(l.SVMs, SVM(newSVM(
-					"",
-					l.source,
-					ctx.ValueContext.GetStart().GetLine(),
-					content,
-				)))
-			*/
+			l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, cntnt, line, start, end, false))
 		}
 		return
 	}
@@ -362,16 +334,14 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 			if s, ok := v.(*parser.ExpressionBlockContext); ok {
 				if s == ctx.GetParent().GetParent() {
 
-					symbolID := c.GetParent().(*parser.ConstArrayDefContext).NameNode().GetText() + "[" + fmt.Sprint(i/2-1) + "]" // TODO: Not sure, if this
+					symbolID := c.GetParent().(*parser.ConstArrayDefContext).NameNode().GetText() + "[" + fmt.Sprint(i/2-1) + "]"
 
 					document := l.source
 					line := ctx.GetStart().GetLine()
 					start := ctx.GetStart().GetColumn()
 					end := start + utf8.RuneCountInString(content)
 
-					//fmt.Fprintf(os.Stderr, "\n[%s] %s { %d: %d-%d}\n", symbolID, content, line, start, end)
-
-					l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
+					l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end))
 				}
 			}
 		}
@@ -406,43 +376,21 @@ func (l *DaedalusTranslatingListener) DidFindMemberVarStringLiteral( /*list *[]S
 				end := start + utf8.RuneCountInString(content)
 				document := l.source
 
-				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
-				/*
-					*list = append(*list,
-						newStringLiteral(
-							content,
-							l.source,
-							ass.ExpressionBlock().GetStart().GetLine(),
-							efs.NameNode().GetText()+"."+field,
-							"",
-							"",
-						),
-					)
-				*/
+				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end))
+
 				return true
 				// also check in prototypes
 			} else if efs, ok := ass.GetParent().GetParent().GetParent().(*parser.PrototypeDefContext); ok {
 
-				//content := ass.ExpressionBlock().GetText()
+				content := ass.ExpressionBlock().GetText()
 				symbolID := efs.NameNode().GetText() + "." + field
 				line := ass.ExpressionBlock().GetStart().GetLine()
 				start := ass.ExpressionBlock().GetStart().GetColumn()
-				end := start + utf8.RuneCountInString(ass.ExpressionBlock().GetText())
+				end := start + utf8.RuneCountInString(content)
 				document := l.source
 
-				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, line, start, end))
-				/*
-					*list = append(*list,
-						newStringLiteral(
-							content,
-							l.source,
-							ass.ExpressionBlock().GetStart().GetLine(),
-							efs.NameNode().GetText()+"."+field,
-							"",
-							"",
-						),
-					)
-				*/
+				l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end))
+
 				return true
 			}
 
@@ -557,9 +505,18 @@ var FuncBlackList = []string{
 	"MEM_SearchVobByName",
 }
 
-func IsBlacklisted(e string) bool {
-	for _, a := range FuncBlackList {
-		if strings.EqualFold(a, e) {
+func (l *DaedalusTranslatingListener) isBlacklistedFunc(functionName string) bool {
+	for _, a := range l.config.FunctionBlackList {
+		if strings.EqualFold(a, functionName) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l *DaedalusTranslatingListener) isBlacklistedPath(pathMask string) bool {
+	for _, mask := range l.config.FileMasks {
+		if strings.Contains(strings.ToLower(mask), strings.ToLower(pathMask)) {
 			return true
 		}
 	}
