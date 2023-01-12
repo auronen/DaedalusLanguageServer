@@ -87,95 +87,34 @@ func (l *DaedalusTranslatingListener) parseAI_OutputFuncCallStatements(root antl
 }
 
 func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.StringLiteralValueContext) {
+	// skip blacklisted paths
 	if l.isBlacklistedPath(l.source) {
 		return
 	}
-	//fmt.Fprintf(os.Stderr, "EnterStringLiterlValue\n")
-	/*
-		// Filter Ikarus, Lego, GFA and AFSP and various files TODO: Introduce config file for this
-		if strings.Contains(strings.ToLower(l.source), strings.ToLower("LeGo")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("ikarus")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("AFSP")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("BODYSTATES")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("TestModelle")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("TestZustaende/")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("B_Plunder.d")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("B_MoveMob.d")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("PrintDebug.d")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("B_TestReaction.d")) ||
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("B_Functions.d")) || // asdf
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("/G_Constants.d")) || // asdf
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("/insertAnything.d")) || // asdf
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("/CC_Call.d")) || // asdf
-			strings.Contains(strings.ToLower(l.source), strings.ToLower("GFA")) {
-			return
-		}
-	*/
 
-	//	// known instances
-	//	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[0]") { // C_ITEM and menus
-	//			return
-	//		}
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[1]") { // C_ITEM
-	//			return
-	//		}
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[2]") { // C_ITEM
-	//			return
-	//		}
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[3]") { // C_ITEM
-	//			return
-	//		}
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[4]") { // C_ITEM
-	//			return
-	//		}
-	//		if l.DidFindMemberVarStringLiteral( /* &l.StringLiterals, */ ass, "text[5]") { // C_ITEM
-	//			return
-	//		}
-	//	}
-
-	// known instances
+	// known instance members
+	// INFO: I check these before the empty string check because of how "dynamic" these fields are handled in translations
 	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
-		//	if ass, ok := ctx.GetParent().GetParent().GetParent().GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "description") { // C_INFO and C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name") { // C_ITEM and C_NPC
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "name[0]") { // name is actually a string array, some crazy people specify the first element :herosmile:
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[0]") { // C_ITEM and menus
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[1]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[2]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[3]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[4]") { // C_ITEM
-			return
-		}
-		if l.DidFindMemberVarStringLiteral( /*&l.StringLiterals,*/ ass, "text[5]") { // C_ITEM
-			return
+		for _, field := range l.config.MemberVariables {
+			if l.DidFindMemberVarStringLiteral(ass, field) {
+				return
+			}
 		}
 	}
 
+	// get the string content
 	content := ctx.ValueContext.GetText()
-	if len(content) <= 2 { // skip empty strings ""
+
+	// skip empty strings ""
+	if len(content) <= 2 {
 		//TODO:
-		//return
+		return
 	}
 	// filter out string not containing letters, TODO: might be dangerous for special characters?
 	if !HasLetter(content) {
 		return
 	}
-	// Filter SVMs
+	// Filter SVM calls
 	if strings.HasPrefix(content, "\"$") {
 		return
 		// Filter files by their extensions
@@ -231,6 +170,9 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		if l.isBlacklistedFunc(fncName) {
 			return
 		}
+
+		// Somehow build a call stack and check, if the string literal ends up "terminating" in an non blacklisted external
+
 		/*
 			// These are examples of functions I had to extract const strings from. TODO: Make it configurable from a .json file
 			else {
@@ -317,7 +259,6 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 					start = h.GetColumn()
 					end = start + utf8.RuneCountInString(strings.TrimSpace(txt))
 					cntnt = txt
-					//fmt.Fprintf(os.Stderr, "\n%s\nlength: %d", txt, end-start)
 					break
 				}
 			}
@@ -328,7 +269,7 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	}
 
 	// constant arrays
-	if /* constArrCtx */ c, ok := ctx.GetParent().GetParent().GetParent().(*parser.ConstArrayAssignmentContext); ok {
+	if c, ok := ctx.GetParent().GetParent().GetParent().(*parser.ConstArrayAssignmentContext); ok {
 
 		for i, v := range c.GetChildren() {
 			if s, ok := v.(*parser.ExpressionBlockContext); ok {
@@ -406,103 +347,6 @@ func HasLetter(s string) bool {
 		}
 	}
 	return false
-}
-
-// TODO: move this to json config
-// function black list
-var FuncBlackList = []string{
-	"PrintDebug",
-	"PrintDialog",
-	"PrintDebugInst",
-	"PrintDebugInstCh",
-	"PrintDebugCh",
-	"PrintMulti",
-	"PlayVideo",
-	"PlayVideoEx",
-	"Wld_IsMobAvailable",
-	"Wld_IsFPAvailable",
-	"Wld_IsNextFPAvailable",
-	"Npc_GetDisttowp",
-	"AI_StartState",
-	"AI_OutputSvm",
-	"AI_OutputSvm_Overlay",
-	"AI_PlayCutscene",
-	"AI_PlayAni",
-	"AI_PlayAniBS",
-	"AI_GoToWP",
-	"AI_Teleport",
-	"AI_GoToFP",
-	"Npc_IsOnFP",
-	"AI_GoToNextFP",
-	"Npc_StopAni",
-	"Npc_PlayAni",
-	"Wld_GetMobState",
-	"AI_LookAt",
-	"AI_PointAt",
-	"AI_AskText",
-	"AI_Snd_Play",
-	"AI_Snd_Play3d",
-	"Snd_Play",
-	"Snd_Play3d",
-	"Mis_AddMissionEntry",
-	"Mdl_SetVisual",
-	"Mdl_SetVisualBody",
-	"Mdl_ApplyOverlayMds",
-	"Mdl_ApplyOverlayMdsTimed",
-	"Mdl_RemoveOverlayMds",
-	"Mdl_ApplyRandomAni",
-	"Mdl_ApplyRandomAniFreq",
-	"Mdl_StartFaceAni",
-	"Mdl_ApplyRandomFaceAni",
-	"Wld_InsertNpc",
-	"Wld_PlayEffect",
-	"Wld_StopEffect",
-	"AI_PlayFx",
-	"AI_StopFx",
-	"Wld_InsertNpcAndRespawn",
-	"Wld_InsertItem",
-	"Wld_InsertObject",
-	"Wld_ExchangeGuildAttitudes",
-	"Wld_SetObjectRoutine",
-	"Wld_SetMobRoutine",
-	"Wld_SendTrigger",
-	"Wld_SendUntrigger",
-	"AI_TakeMob",
-	"AI_UseMob",
-	"Mob_CreateItems",
-	"Mob_HasItems",
-	"Doc_SetPage",
-	"Doc_SetFont",
-	"Doc_SetLevel",
-	"Doc_Open",
-	"Doc_Font",
-	"Doc_MapCoordinates",
-	"TA",
-	"TA_Min",
-	"TA_Cs",
-	"Npc_ExchangeRoutine",
-	"RTN_Exchange",
-	"Wld_AssignRoomToGuild",
-	"Wld_AssignRoomToNpc",
-	"Hlp_CutscenePlayed",
-	"AI_Output",
-	"PrintDebugNpc",
-	"B_ExchangeRoutineRun",
-	"B_ExchangeRoutine",
-	"B_SayOverlay",
-	"PrintDebugString",
-	"PrintDebugInt",
-	"B_GotoFP",
-	"B_InterruptMob",
-	"ZS_Meditate_Om",
-	"B_StartUseMob",
-	"B_PracticeCombat",
-	"B_StopUseMob",
-	"Hlp_StrCmp",
-	"VobShowVisual",
-	"SetVobVisual",
-	"SearchVobsByClass",
-	"MEM_SearchVobByName",
 }
 
 func (l *DaedalusTranslatingListener) isBlacklistedFunc(functionName string) bool {

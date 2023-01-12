@@ -236,6 +236,7 @@ func (h *LspHandler) handleCodeLensResolve(req dls.RpcContext, params lsp.CodeLe
 		params.Command.Command = meta.Command
 		params.Command.Arguments = []any{meta.SourceURI, meta.SourceLocation.Range.Start, locations}
 	}
+	h.logger.Infof("\n%v\n%v\n%v", meta.SourceURI, meta.SourceLocation.Range.Start, locations /*, params.Command.Command, params.Command.Arguments*/)
 	return req.Reply(req.Context(), params, nil)
 }
 

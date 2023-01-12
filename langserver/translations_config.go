@@ -12,6 +12,7 @@ import (
 type translationConfiguration struct {
 	FileMasks         []string `json:"fileMasks"`
 	FunctionBlackList []string `json:"functionBlackList"`
+	MemberVariables   []string `json:"memberVariables"`
 }
 
 func readConf(file string, globalConfig *translationConfiguration) {
@@ -31,12 +32,13 @@ func readConf(file string, globalConfig *translationConfiguration) {
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'users' which we defined above
 	json.Unmarshal(byteValue, &globalConfig)
+
+	fmt.Fprintf(os.Stderr, "\nTranslation config: %v\n", prettyJSON(globalConfig))
 }
 
 func initTranslationConfig(ws LspWorkspace) translationConfiguration {
 	var conf translationConfiguration
 	targetDir := filepath.Join(ws.path, ".dls", "translations.json")
 	readConf(targetDir, &conf)
-	fmt.Fprintf(os.Stderr, "\n%s - conf:%v\n", targetDir, conf)
 	return conf
 }

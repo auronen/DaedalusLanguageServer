@@ -242,6 +242,5 @@ func (h *LspHandler) handleTextDocumentReferences(req dls.RpcContext, params lsp
 		}
 		result = append(result, v)
 	}
-
 	return req.Reply(req.Context(), result, nil)
 }

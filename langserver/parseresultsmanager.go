@@ -563,7 +563,7 @@ func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFil
 		chanPaths <- r
 	}
 	close(chanPaths)
-	// TODO: Read the config here!!! only once
+
 	conf := initTranslationConfig(ws)
 
 	var wg sync.WaitGroup
@@ -599,7 +599,9 @@ func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFil
 				parsed := m.ParseScriptsTranslations(r, buf.String(), conf)
 
 				m.mtx.Lock()
-				m.parseResults[parsed.Source] = parsed
+				if m.parseResults[parsed.Source] != nil {
+					m.parseResults[parsed.Source].StringLocations = parsed.StringLocations
+				}
 				results = append(results, parsed)
 				m.mtx.Unlock()
 			}

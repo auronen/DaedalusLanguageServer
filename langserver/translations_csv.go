@@ -257,10 +257,42 @@ func csvReadLanguage(lang string) (translatedStrings []TranslatedString, err err
 			break
 		}
 
+		if len(records) > 2 { // getting rid of the header - like this because some types of csvs do not have the header
+			if strings.EqualFold(records[0][5], "context") && strings.EqualFold(records[0][2], "target") {
+				_, records = records[0], records[1:]
+			}
+		}
+
 		for _, r := range records {
 			// "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
 			translatedStrings = append(translatedStrings, newTranslatedString(r[5], r[2]))
 		}
+
 	}
 	return
+}
+
+func csvGetLanguages() (languages []string, err error) {
+	// create path
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return
+	}
+	path := filepath.Join(repoRoot, ".translations")
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return
+	}
+
+	langs := make([]string, 0)
+
+	fmt.Fprintf(os.Stderr, "Printing files: ")
+
+	for _, f := range files {
+		if f.IsDir() {
+			langs = append(langs, f.Name())
+		}
+	}
+	return langs, nil
 }
