@@ -29,6 +29,11 @@ Namespace: N A M E S P A C E;
 Null: N U L L;
 Meta: M E T A;
 
+// preprocessor like macros
+MacroIF: MACRO I F;
+MacroELSEIF: MACRO I F E L S E;
+MacroELSE: MACRO E L S E;
+
 LeftParen: '(';
 RightParen: ')';
 
@@ -107,6 +112,7 @@ fragment W: [Ww];
 fragment X: [Xx];
 fragment Y: [Yy];
 fragment Z: [Zz];
+fragment MACRO: '#';
 
 //parser
 daedalusFile: mainBlock? EOF;
@@ -119,6 +125,12 @@ blockDef:
 		| namespaceDef
 	) Semi;
 inlineDef: (constDef | varDecl | instanceDecl) Semi;
+
+macroCondition: expressionBlock;
+macroElseBlock: MacroELSE LeftBrace (contentBlock | statementBlock | statement | expression | (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace ;
+macroElseIfBlock: MacroELSEIF macroCondition LeftBrace (contentBlock | statementBlock | statement | expression |  (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace;
+macroIfBlock: MacroIF macroCondition LeftBrace (contentBlock | statementBlock | statement | expression | (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace;
+macroDef: macroIfBlock ( macroElseIfBlock)*? ( macroElseBlock)?;
 
 functionDef:
 	Func typeReference nameNode parameterList statementBlock;
@@ -135,8 +147,9 @@ instanceDecl:
 	Instance nameNode (',' nameNode)*? LeftParen parentReference RightParen;
 namespaceDef:
 	Namespace nameNode LeftBrace contentBlock*? RightBrace;
+
 mainBlock: zParserExtenderMetaBlock? contentBlock+;
-contentBlock: (blockDef | inlineDef);
+contentBlock: (blockDef | inlineDef | (macroDef Semi));
 varDecl:
 	Var typeReference (varValueDecl | varArrayDecl) (
 		',' (varDecl | varValueDecl | varArrayDecl)
@@ -164,7 +177,7 @@ parameterDecl:
 		LeftBracket arraySize RightBracket
 	)?;
 statementBlock:
-	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?))*? RightBrace;
+	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | (macroDef Semi))*? RightBrace;
 statement:
 	assignment
 	| returnStatement

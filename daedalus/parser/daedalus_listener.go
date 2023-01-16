@@ -17,6 +17,21 @@ type DaedalusListener interface {
 	// EnterInlineDef is called when entering the inlineDef production.
 	EnterInlineDef(c *InlineDefContext)
 
+	// EnterMacroCondition is called when entering the macroCondition production.
+	EnterMacroCondition(c *MacroConditionContext)
+
+	// EnterMacroElseBlock is called when entering the macroElseBlock production.
+	EnterMacroElseBlock(c *MacroElseBlockContext)
+
+	// EnterMacroElseIfBlock is called when entering the macroElseIfBlock production.
+	EnterMacroElseIfBlock(c *MacroElseIfBlockContext)
+
+	// EnterMacroIfBlock is called when entering the macroIfBlock production.
+	EnterMacroIfBlock(c *MacroIfBlockContext)
+
+	// EnterMacroDef is called when entering the macroDef production.
+	EnterMacroDef(c *MacroDefContext)
+
 	// EnterFunctionDef is called when entering the functionDef production.
 	EnterFunctionDef(c *FunctionDefContext)
 
@@ -235,6 +250,21 @@ type DaedalusListener interface {
 
 	// ExitInlineDef is called when exiting the inlineDef production.
 	ExitInlineDef(c *InlineDefContext)
+
+	// ExitMacroCondition is called when exiting the macroCondition production.
+	ExitMacroCondition(c *MacroConditionContext)
+
+	// ExitMacroElseBlock is called when exiting the macroElseBlock production.
+	ExitMacroElseBlock(c *MacroElseBlockContext)
+
+	// ExitMacroElseIfBlock is called when exiting the macroElseIfBlock production.
+	ExitMacroElseIfBlock(c *MacroElseIfBlockContext)
+
+	// ExitMacroIfBlock is called when exiting the macroIfBlock production.
+	ExitMacroIfBlock(c *MacroIfBlockContext)
+
+	// ExitMacroDef is called when exiting the macroDef production.
+	ExitMacroDef(c *MacroDefContext)
 
 	// ExitFunctionDef is called when exiting the functionDef production.
 	ExitFunctionDef(c *FunctionDefContext)
