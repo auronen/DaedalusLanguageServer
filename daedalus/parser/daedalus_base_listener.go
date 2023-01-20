@@ -39,6 +39,12 @@ func (s *BaseDaedalusListener) EnterInlineDef(ctx *InlineDefContext) {}
 // ExitInlineDef is called when production inlineDef is exited.
 func (s *BaseDaedalusListener) ExitInlineDef(ctx *InlineDefContext) {}
 
+// EnterMacroBlock is called when production macroBlock is entered.
+func (s *BaseDaedalusListener) EnterMacroBlock(ctx *MacroBlockContext) {}
+
+// ExitMacroBlock is called when production macroBlock is exited.
+func (s *BaseDaedalusListener) ExitMacroBlock(ctx *MacroBlockContext) {}
+
 // EnterMacroCondition is called when production macroCondition is entered.
 func (s *BaseDaedalusListener) EnterMacroCondition(ctx *MacroConditionContext) {}
 

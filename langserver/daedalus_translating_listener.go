@@ -2,6 +2,7 @@ package langserver
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -304,7 +305,7 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	*/
 }
 
-// Checks, wheter thi string literal is assigned to the `field` specified
+// Checks, wheter the string literal is assigned to the `field` specified
 func (l *DaedalusTranslatingListener) DidFindMemberVarStringLiteral( /*list *[]StringLiteral,*/ ass *parser.AssignmentContext, field string) bool {
 	if strings.EqualFold(ass.Reference().GetText(), field) {
 		if strings.Contains(ass.ExpressionBlock().GetText(), "\"") {
@@ -349,6 +350,7 @@ func HasLetter(s string) bool {
 	return false
 }
 
+// Is the function blacklisted?
 func (l *DaedalusTranslatingListener) isBlacklistedFunc(functionName string) bool {
 	for _, a := range l.config.FunctionBlackList {
 		if strings.EqualFold(a, functionName) {
@@ -358,6 +360,7 @@ func (l *DaedalusTranslatingListener) isBlacklistedFunc(functionName string) boo
 	return false
 }
 
+// Is the path blacklisted?
 func (l *DaedalusTranslatingListener) isBlacklistedPath(pathMask string) bool {
 	for _, mask := range l.config.FileMasks {
 		if strings.Contains(strings.ToLower(mask), strings.ToLower(pathMask)) {
@@ -365,4 +368,18 @@ func (l *DaedalusTranslatingListener) isBlacklistedPath(pathMask string) bool {
 		}
 	}
 	return false
+}
+func (l *DaedalusTranslatingListener) EnterMacroDef(ctx *parser.MacroDefContext) {
+	fmt.Fprintf(os.Stderr, "%v\n", ctx.GetChildren())
+	for i, ch := range ctx.GetChildren() {
+		if i > 1 && len(ctx.GetChildren()) == i {
+			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+		}
+		if i == 0 {
+			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+		} else {
+			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroElseBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+		}
+	}
+
 }

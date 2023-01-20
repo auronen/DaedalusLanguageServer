@@ -999,4 +999,16 @@ func (l *CombinedDaedalusListener) ExitMacroDef(c *parser.MacroDefContext) {
 	l.right.ExitMacroDef(c)
 }
 
+// EnterMacroBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterMacroBlock(c *parser.MacroBlockContext) {
+	l.left.EnterMacroBlock(c)
+	l.right.EnterMacroBlock(c)
+}
+
+// ExitMacroBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitMacroBlock(c *parser.MacroBlockContext) {
+	l.left.ExitMacroBlock(c)
+	l.right.ExitMacroBlock(c)
+}
+
 var _ parser.DaedalusListener = (*CombinedDaedalusListener)(nil)

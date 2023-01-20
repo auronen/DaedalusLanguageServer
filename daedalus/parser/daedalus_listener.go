@@ -17,6 +17,9 @@ type DaedalusListener interface {
 	// EnterInlineDef is called when entering the inlineDef production.
 	EnterInlineDef(c *InlineDefContext)
 
+	// EnterMacroBlock is called when entering the macroBlock production.
+	EnterMacroBlock(c *MacroBlockContext)
+
 	// EnterMacroCondition is called when entering the macroCondition production.
 	EnterMacroCondition(c *MacroConditionContext)
 
@@ -250,6 +253,9 @@ type DaedalusListener interface {
 
 	// ExitInlineDef is called when exiting the inlineDef production.
 	ExitInlineDef(c *InlineDefContext)
+
+	// ExitMacroBlock is called when exiting the macroBlock production.
+	ExitMacroBlock(c *MacroBlockContext)
 
 	// ExitMacroCondition is called when exiting the macroCondition production.
 	ExitMacroCondition(c *MacroConditionContext)

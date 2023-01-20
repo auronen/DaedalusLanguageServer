@@ -30,9 +30,10 @@ Null: N U L L;
 Meta: M E T A;
 
 // preprocessor like macros
-MacroIF: MACRO I F;
-MacroELSEIF: MACRO I F E L S E;
-MacroELSE: MACRO E L S E;
+Mif: M_ I F;
+Melif: M_ E L I F;
+Melse: M_ E L S E;
+Mendif: M_ E N D I F;
 
 LeftParen: '(';
 RightParen: ')';
@@ -74,6 +75,7 @@ Newline: ('\r' '\n'? | '\n') -> skip;
 BlockComment: '/*' .*? '*/' -> skip;
 LineComment: '//' ~[\r\n]* -> channel(2);
 
+
 // fragments
 fragment NonDigit: GermanCharacter | [a-zA-Z_];
 fragment IdContinue: NonDigit | IdSpecial | Digit;
@@ -112,7 +114,7 @@ fragment W: [Ww];
 fragment X: [Xx];
 fragment Y: [Yy];
 fragment Z: [Zz];
-fragment MACRO: '#';
+fragment M_: '#';
 
 //parser
 daedalusFile: mainBlock? EOF;
@@ -126,11 +128,12 @@ blockDef:
 	) Semi;
 inlineDef: (constDef | varDecl | instanceDecl) Semi;
 
+macroBlock: (blockDef | (statement Semi) | ( ifBlockStatement Semi?));
 macroCondition: expressionBlock;
-macroElseBlock: MacroELSE LeftBrace (contentBlock | statementBlock | statement | expression | (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace ;
-macroElseIfBlock: MacroELSEIF macroCondition LeftBrace (contentBlock | statementBlock | statement | expression |  (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace;
-macroIfBlock: MacroIF macroCondition LeftBrace (contentBlock | statementBlock | statement | expression | (statement Semi) | ( ifBlockStatement Semi?) | (expressionBlock Semi)) RightBrace;
-macroDef: macroIfBlock ( macroElseIfBlock)*? ( macroElseBlock)?;
+macroElseBlock: Melse (macroBlock)*;
+macroElseIfBlock: Melif macroCondition (macroBlock)*;
+macroIfBlock: Mif macroCondition (macroBlock)* ;
+macroDef: macroIfBlock ( macroElseIfBlock)*? ( macroElseBlock)? Mendif;
 
 functionDef:
 	Func typeReference nameNode parameterList statementBlock;
@@ -149,7 +152,7 @@ namespaceDef:
 	Namespace nameNode LeftBrace contentBlock*? RightBrace;
 
 mainBlock: zParserExtenderMetaBlock? contentBlock+;
-contentBlock: (blockDef | inlineDef | (macroDef Semi));
+contentBlock: (blockDef | inlineDef | macroDef);
 varDecl:
 	Var typeReference (varValueDecl | varArrayDecl) (
 		',' (varDecl | varValueDecl | varArrayDecl)
@@ -177,7 +180,7 @@ parameterDecl:
 		LeftBracket arraySize RightBracket
 	)?;
 statementBlock:
-	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | (macroDef Semi))*? RightBrace;
+	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef)*? RightBrace;
 statement:
 	assignment
 	| returnStatement
