@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	// lsp "github.com/kirides/DaedalusLanguageServer/protocol"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/parser"
 )
 
@@ -94,7 +95,7 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	}
 
 	// known instance members
-	// INFO: I check these before the empty string check because of how "dynamic" these fields are handled in translations
+	// INFO: I check these before the empty string check because of how "dynamically" these fields are handled in translations
 	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
 		for _, field := range l.config.MemberVariables {
 			if l.DidFindMemberVarStringLiteral(ass, field) {
@@ -108,40 +109,14 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 
 	// skip empty strings ""
 	if len(content) <= 2 {
-		//TODO:
 		return
 	}
-	// filter out string not containing letters, TODO: might be dangerous for special characters?
+	// filter out string not containing letters, FIXME: might be dangerous for special characters?
 	if !HasLetter(content) {
 		return
 	}
-	// Filter SVM calls
-	if strings.HasPrefix(content, "\"$") {
-		return
-		// Filter files by their extensions
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".TGA\"")) {
-		return
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".3ds\"")) {
-		return
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".mms\"")) {
-		return
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".asc\"")) {
-		return
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".zen\"")) {
-		return
-	} else if strings.HasSuffix(
-		strings.ToLower(content),
-		strings.ToLower(".wav\"")) {
+
+	if isFileterString(content) {
 		return
 	}
 
@@ -149,13 +124,13 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	if fncCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.FuncCallContext); ok {
 		fncName := fncCtx.NameNode().GetText()
 
-		// Filter out TA_ and ZS_ functions, I think we can safely assume these will be used in the majority of script bases
-		// TODO: Add this to a filter also
-		if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("TA")) {
-			return
-		} else if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("ZS")) {
-			return
-		}
+		// // Filter out TA_ and ZS_ functions, I think we can safely assume these will be used in the majority of script bases
+		// // TODO: Add this to a filter also
+		// if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("TA")) {
+		// 	return
+		// } else if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("ZS")) {
+		// 	return
+		// }
 		if strings.EqualFold(fncName, "Info_AddChoice") {
 			symbolID := fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
 			line := ctx.ValueContext.GetStart().GetLine()
@@ -172,50 +147,7 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 			return
 		}
 
-		// Somehow build a call stack and check, if the string literal ends up "terminating" in an non blacklisted external
-
-		/*
-			// These are examples of functions I had to extract const strings from. TODO: Make it configurable from a .json file
-			else {
-				const_name := ""
-
-				if strings.EqualFold(fncName, "B_LogEntry") {
-					const_name = fncCtx.AllFuncArgExpression()[0].GetText()
-				} else if strings.EqualFold(fncName, "Log_AddEntry") {
-					const_name = fncCtx.AllFuncArgExpression()[0].GetText()
-				} else if strings.EqualFold(fncName, "EndeQuest") {
-					const_name = fncCtx.AllFuncArgExpression()[0].GetText()
-				} else if strings.EqualFold(fncName, "QuestTagebucheintrag") {
-					const_name = fncCtx.AllFuncArgExpression()[0].GetText()
-				} else if strings.EqualFold(fncName, "NeueQuest") {
-					const_name = fncCtx.AllFuncArgExpression()[0].GetText()
-				} else if strings.EqualFold(fncName, "Doc_PrintLine") {
-					if fnc, ok := fncCtx.GetParent().GetParent().GetParent().(*parser.FunctionDefContext); ok {
-						const_name = fnc.NameNode().GetText()
-					}
-				} else if strings.EqualFold(fncName, "Doc_PrintLines") {
-					if fnc, ok := fncCtx.GetParent().GetParent().GetParent().(*parser.FunctionDefContext); ok {
-						const_name = fnc.NameNode().GetText()
-					}
-				} else if strings.EqualFold(fncName, "PrintScreen") {
-					const_name = fncName
-				}
-
-				NewConstantNames[const_name] += 1
-
-				l.StringLiterals = append(l.StringLiterals,
-					newStringLiteral(
-						content,
-						l.source,
-						ctx.ValueContext.GetStart().GetLine(),
-						"",
-						fncName+" call.", // add a developer comment to tell translators/translation preparators in which function is the string used as a parameter
-						const_name+"_"+fmt.Sprintf("%d", NewConstantNames[const_name]),
-					),
-				)
-				return
-			}
-		*/
+		// TODO: Somehow build a call stack for all cunftion calls and check, if the string literal ends up "terminating" in an non blacklisted external
 	}
 
 	// string constants
@@ -291,22 +223,20 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	}
 
 	// if anything slips by, label it NOT HANDLED, useful for catching unusual cases
-	/*
-		l.StringLiterals = append(l.StringLiterals,
-			newStringLiteral(
-				content,
+
+		l.StringLocations["NOT HANDLED"] = append(
+			l.StringLocations["NOT HANDLED"],
+			newSymbolPosition(
 				l.source,
-				ctx.ValueContext.GetStart().GetLine(),
-				"",
-				"NOT HANDLED",
-				"",
-			),
-		)
-	*/
+				content,
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetLine() + utf8.RuneCountInString(content),
+				"NOT HADNDLED"))
 }
 
 // Checks, wheter the string literal is assigned to the `field` specified
-func (l *DaedalusTranslatingListener) DidFindMemberVarStringLiteral( /*list *[]StringLiteral,*/ ass *parser.AssignmentContext, field string) bool {
+func (l *DaedalusTranslatingListener) DidFindMemberVarStringLiteral(ass *parser.AssignmentContext, field string) bool {
 	if strings.EqualFold(ass.Reference().GetText(), field) {
 		if strings.Contains(ass.ExpressionBlock().GetText(), "\"") {
 			if efs, ok := ass.GetParent().GetParent().GetParent().(*parser.InstanceDefContext); ok {
@@ -335,7 +265,6 @@ func (l *DaedalusTranslatingListener) DidFindMemberVarStringLiteral( /*list *[]S
 
 				return true
 			}
-
 		}
 	}
 	return false
@@ -369,17 +298,101 @@ func (l *DaedalusTranslatingListener) isBlacklistedPath(pathMask string) bool {
 	}
 	return false
 }
+
+
+// Return true if the string contains $ in the prefix (SVMs) or
+// if it cointans any of the file extensions
+func isFileterString(s string) bool {
+	if strings.HasPrefix(s, "\"$") {
+		return true
+		// Filter files by their extensions
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".Tga\"")) {
+		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".3ds\"")) {
+		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".mms\"")) {
+		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".asc\"")) {
+		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".zen\"")) {
+		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".wav\"")) {
+		return true
+	}
+	return false
+}
+
 func (l *DaedalusTranslatingListener) EnterMacroDef(ctx *parser.MacroDefContext) {
-	fmt.Fprintf(os.Stderr, "%v\n", ctx.GetChildren())
+	fmt.Fprintf(os.Stderr, "Enter Macro Definition: %v\n", ctx.GetChildren())
+	start_ln := ctx.GetStart().GetLine()
+	start_col := ctx.GetStart().GetColumn()
+	end_ln := ctx. GetStop().GetLine()
+	end_col := ctx.GetStop().GetColumn() + len(ctx.GetStop().GetText())+1
+
+	fmt.Fprintf(os.Stderr, "(%d, %d) - (%d, %d)\n", start_ln, start_col, end_ln, end_col)
 	for i, ch := range ctx.GetChildren() {
-		if i > 1 && len(ctx.GetChildren()) == i {
-			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+		numOfBlocks := len(ctx.GetChildren())
+		if i == numOfBlocks - 1 { // last one is #endif
+			break
 		}
-		if i == 0 {
-			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
-		} else {
-			fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroElseBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+		if i == 0 { // first element is a if block
+			// fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+			l.ParseMacroIfBlock(ch.(*parser.MacroIfBlockContext))
+		} else if i == numOfBlocks - 2 { // last element is a else block
+			l.ParseMacroElseBlock(ch.(*parser.MacroElseBlockContext))
+			// fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroElseBlockContext).GetChild(1).(*parser.MacroBlockContext).GetText())
+		} else { // middle elements are elif blocks
+			// fmt.Fprintf(os.Stderr, "%v\n", ch.(*parser.MacroElseIfBlockContext).GetChild(2).(*parser.MacroBlockContext).GetText())
+			l.ParseMacroElseIfBlock(ch.(*parser.MacroElseIfBlockContext))
 		}
 	}
-
 }
+
+type MacroBlock struct {
+    condition string
+	content   string
+//	position  lsp.Position
+}
+
+
+func (l *DaedalusTranslatingListener) ParseMacroIfBlock(ctx *parser.MacroIfBlockContext) {
+	condition := ctx.GetChild(1).(*parser.MacroConditionContext).GetText()
+	fmt.Fprintf(os.Stderr, "condition: %s\n", condition)
+	content := ctx.GetChild(2).(*parser.MacroBlockContext).GetText()
+	fmt.Fprintf(os.Stderr, "macro block content: %s\n", content)
+}
+
+func (l *DaedalusTranslatingListener) ParseMacroElseIfBlock(ctx *parser.MacroElseIfBlockContext) {
+	condition := ctx.GetChild(1).(*parser.MacroConditionContext).GetText()
+	fmt.Fprintf(os.Stderr, "condition: %s\n", condition)
+	content := ctx.GetChild(2).(*parser.MacroBlockContext).GetText()
+	fmt.Fprintf(os.Stderr, "macro block content: %s\n", content)
+}
+
+func (l *DaedalusTranslatingListener) ParseMacroElseBlock(ctx *parser.MacroElseBlockContext) {
+	content := ctx.GetChild(1).(*parser.MacroBlockContext).GetText()
+	fmt.Fprintf(os.Stderr, "macro block content: %s\n", content)
+}
+
+
+/*
+func (l *DaedalusTranslatingListener) EnterMacroIfBlock(ctx *parser.MacroIfBlockContext) {
+	fmt.Fprintf(os.Stderr, "\n\nEnterMacroIfBlock\n\n")
+}
+
+func (l *DaedalusTranslatingListener) EnterMacroElseBlock (ctx *parser.MacroElseBlockContext) {
+	fmt.Fprintf(os.Stderr, "\n\nMacro ElseBlock\n\n")
+}
+*/
