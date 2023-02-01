@@ -1011,4 +1011,40 @@ func (l *CombinedDaedalusListener) ExitMacroBlock(c *parser.MacroBlockContext) {
 	l.right.ExitMacroBlock(c)
 }
 
+// EnterWhileBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileBlock(c *parser.WhileBlockContext) {
+	l.left.EnterWhileBlock(c)
+	l.right.EnterWhileBlock(c)
+}
+
+// ExitWhileBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileBlock(c *parser.WhileBlockContext) {
+	l.left.ExitWhileBlock(c)
+	l.right.ExitWhileBlock(c)
+}
+
+// EnterWhileCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileCondition(c *parser.WhileConditionContext) {
+	l.left.EnterWhileCondition(c)
+	l.right.EnterWhileCondition(c)
+}
+
+// ExitWhileCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileCondition(c *parser.WhileConditionContext) {
+	l.left.ExitWhileCondition(c)
+	l.right.ExitWhileCondition(c)
+}
+
+// EnterWhileBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileBlockStatement(c *parser.WhileBlockStatementContext) {
+	l.left.EnterWhileBlockStatement(c)
+	l.right.EnterWhileBlockStatement(c)
+}
+
+// ExitWhileBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileBlockStatement(c *parser.WhileBlockStatementContext) {
+	l.left.ExitWhileBlockStatement(c)
+	l.right.ExitWhileBlockStatement(c)
+}
+
 var _ parser.DaedalusListener = (*CombinedDaedalusListener)(nil)

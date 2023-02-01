@@ -27,7 +27,12 @@ Prototype: P R O T O T Y P E;
 Instance: I N S T A N C E;
 Namespace: N A M E S P A C E;
 Null: N U L L;
+
+// zParserExtender
 Meta: M E T A;
+While: W H I L E;
+Continue: C O N T I N U E;
+Break: B R E A K;
 
 // preprocessor like macros
 Mif: M_ I F;
@@ -128,7 +133,7 @@ blockDef:
 	) Semi;
 inlineDef: (constDef | varDecl | instanceDecl) Semi;
 
-macroBlock: (blockDef | (statement Semi) | ( ifBlockStatement Semi?));
+macroBlock: (blockDef | (statement Semi) | ( ifBlockStatement Semi?) | ( whileBlockStatement Semi));
 macroCondition: expressionBlock;
 macroElseBlock: Melse (macroBlock)*;
 macroElseIfBlock: Melif macroCondition (macroBlock)*;
@@ -180,13 +185,15 @@ parameterDecl:
 		LeftBracket arraySize RightBracket
 	)?;
 statementBlock:
-	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef)*? RightBrace;
+	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef | whileBlockStatement Semi)*? RightBrace;
 statement:
 	assignment
 	| returnStatement
 	| constDef
 	| varDecl
-	| expression;
+	| expression
+	| Continue
+	| Break;
 funcCall:
 	nameNode LeftParen (
 		funcArgExpression (',' funcArgExpression)*?
@@ -198,6 +205,10 @@ elseIfBlock: Else If ifCondition statementBlock;
 ifBlock: If ifCondition statementBlock;
 ifBlockStatement: ifBlock ( elseIfBlock)*? ( elseBlock)?;
 returnStatement: Return ( expressionBlock)?;
+
+whileCondition: expressionBlock;
+whileBlock: While whileCondition statementBlock;
+whileBlockStatement: whileBlock;
 
 funcArgExpression:
 	expressionBlock; // we use that to detect func call args
