@@ -1047,4 +1047,40 @@ func (l *CombinedDaedalusListener) ExitWhileBlockStatement(c *parser.WhileBlockS
 	l.right.ExitWhileBlockStatement(c)
 }
 
+// EnterTestBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestBlockStatement(c *parser.TestBlockStatementContext) {
+	l.left.EnterTestBlockStatement(c)
+	l.right.EnterTestBlockStatement(c)
+}
+
+// ExitTestBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestBlockStatement(c *parser.TestBlockStatementContext) {
+	l.left.ExitTestBlockStatement(c)
+	l.right.ExitTestBlockStatement(c)
+}
+
+// EnterTestBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestBlock(c *parser.TestBlockContext) {
+	l.left.EnterTestBlock(c)
+	l.right.EnterTestBlock(c)
+}
+
+// ExitTestBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestBlock(c *parser.TestBlockContext) {
+	l.left.ExitTestBlock(c)
+	l.right.ExitTestBlock(c)
+}
+
+// EnterTestCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestCondition(c *parser.TestConditionContext) {
+	l.left.EnterTestCondition(c)
+	l.right.EnterTestCondition(c)
+}
+
+// ExitTestCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestCondition(c *parser.TestConditionContext) {
+	l.left.ExitTestCondition(c)
+	l.right.ExitTestCondition(c)
+}
+
 var _ parser.DaedalusListener = (*CombinedDaedalusListener)(nil)

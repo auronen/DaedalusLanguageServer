@@ -35,6 +35,15 @@ type DaedalusListener interface {
 	// EnterMacroDef is called when entering the macroDef production.
 	EnterMacroDef(c *MacroDefContext)
 
+	// EnterTestCondition is called when entering the testCondition production.
+	EnterTestCondition(c *TestConditionContext)
+
+	// EnterTestBlock is called when entering the testBlock production.
+	EnterTestBlock(c *TestBlockContext)
+
+	// EnterTestBlockStatement is called when entering the testBlockStatement production.
+	EnterTestBlockStatement(c *TestBlockStatementContext)
+
 	// EnterFunctionDef is called when entering the functionDef production.
 	EnterFunctionDef(c *FunctionDefContext)
 
@@ -280,6 +289,15 @@ type DaedalusListener interface {
 
 	// ExitMacroDef is called when exiting the macroDef production.
 	ExitMacroDef(c *MacroDefContext)
+
+	// ExitTestCondition is called when exiting the testCondition production.
+	ExitTestCondition(c *TestConditionContext)
+
+	// ExitTestBlock is called when exiting the testBlock production.
+	ExitTestBlock(c *TestBlockContext)
+
+	// ExitTestBlockStatement is called when exiting the testBlockStatement production.
+	ExitTestBlockStatement(c *TestBlockStatementContext)
 
 	// ExitFunctionDef is called when exiting the functionDef production.
 	ExitFunctionDef(c *FunctionDefContext)
