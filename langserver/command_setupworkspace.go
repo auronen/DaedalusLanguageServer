@@ -86,5 +86,40 @@ func (h *LspWorkspace) commandSetupWorkspace(ws *LspWorkspace, argStr string) er
 		return nil
 	})
 
+	targetDir = filepath.Join(ws.path, ".dls", "zPE")
+	err = os.MkdirAll(targetDir, os.ModePerm /*0640*/)
+	if err != nil && !os.IsExist(err) {
+		h.logger.Errorf("Error creating directory %q. %v", targetDir, err)
+		return nil
+	}
+	root = path.Join(dls.DaedalusBuiltinsPath, "zPE")
+	fs.WalkDir(engine, root, func(entryPath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		targetFile := filepath.Join(targetDir, strings.TrimPrefix(entryPath, root))
+		f, err := os.Create(targetFile)
+		if err != nil {
+			h.logger.Errorf("failed to create file %q. %v", targetFile, err)
+			return nil
+		}
+		defer f.Close()
+		content, err := fs.ReadFile(engine, entryPath)
+		if err != nil {
+			h.logger.Errorf("failed to read embedded file %q. %v", entryPath, err)
+			return nil
+		}
+
+		if _, err := f.Write(content); err != nil {
+			h.logger.Errorf("failed to write file %q. %v", targetFile, err)
+			return nil
+		}
+		f.Chmod(0444)
+		return nil
+	})
 	return nil
 }

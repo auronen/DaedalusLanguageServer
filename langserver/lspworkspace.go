@@ -89,6 +89,15 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 		}
 	}
 
+	// parse zParserExtender
+	if f, err := findPath(filepath.Join(ws.path, ".dls", "zPE", "zParserExtender.src")); err == nil {
+		_, err = ws.parsedDocuments.ParseSource(ws.workspaceCtx, f, ws)
+		if err != nil {
+			ws.logger.Errorf("Error parsing %q: %v", f, err)
+			return
+		}
+	}
+
 	// Try to locate a workspace file
 	foundProjectFile := false
 	for _, v := range config.ProjectFiles {

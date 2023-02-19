@@ -1083,4 +1083,16 @@ func (l *CombinedDaedalusListener) ExitTestCondition(c *parser.TestConditionCont
 	l.right.ExitTestCondition(c)
 }
 
+// EnterVariadic is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterVariadic(c *parser.VariadicContext) {
+	l.left.EnterVariadic(c)
+	l.right.EnterVariadic(c)
+}
+
+// ExitVariadic is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitVariadic(c *parser.VariadicContext) {
+	l.left.ExitVariadic(c)
+	l.right.ExitVariadic(c)
+}
+
 var _ parser.DaedalusListener = (*CombinedDaedalusListener)(nil)

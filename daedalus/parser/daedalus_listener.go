@@ -101,6 +101,9 @@ type DaedalusListener interface {
 	// EnterVarValueDecl is called when entering the varValueDecl production.
 	EnterVarValueDecl(c *VarValueDeclContext)
 
+	// EnterVariadic is called when entering the variadic production.
+	EnterVariadic(c *VariadicContext)
+
 	// EnterParameterList is called when entering the parameterList production.
 	EnterParameterList(c *ParameterListContext)
 
@@ -355,6 +358,9 @@ type DaedalusListener interface {
 
 	// ExitVarValueDecl is called when exiting the varValueDecl production.
 	ExitVarValueDecl(c *VarValueDeclContext)
+
+	// ExitVariadic is called when exiting the variadic production.
+	ExitVariadic(c *VariadicContext)
 
 	// ExitParameterList is called when exiting the parameterList production.
 	ExitParameterList(c *ParameterListContext)

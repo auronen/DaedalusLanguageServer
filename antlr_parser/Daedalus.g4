@@ -27,6 +27,7 @@ Namespace: N A M E S P A C E;
 // keyword and type
 Func: F U N C;
 
+
 // types and pseudo-types
 Int: I N T;
 Float: F L O A T;
@@ -192,12 +193,13 @@ constValueAssignment: Assign expressionBlock;
 varArrayDecl: nameNode LeftBracket arraySize RightBracket;
 varValueDecl: nameNode;
 
+// VA - variadic function parameter
+variadic: '...';
+
 parameterList:
-	LeftParen (parameterDecl (',' parameterDecl)*?)? RightParen;
+	LeftParen (parameterDecl (',' parameterDecl)*?)? (',' variadic)? RightParen;
 parameterDecl:
-	Var typeReference nameNode (
-		LeftBracket arraySize RightBracket
-	)?;
+	Var typeReference nameNode ( LeftBracket arraySize RightBracket )?;
 statementBlock:
 	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef | whileBlockStatement Semi)*? RightBrace;
 statement:

@@ -207,6 +207,12 @@ func (s *BaseDaedalusListener) EnterVarValueDecl(ctx *VarValueDeclContext) {}
 // ExitVarValueDecl is called when production varValueDecl is exited.
 func (s *BaseDaedalusListener) ExitVarValueDecl(ctx *VarValueDeclContext) {}
 
+// EnterVariadic is called when production variadic is entered.
+func (s *BaseDaedalusListener) EnterVariadic(ctx *VariadicContext) {}
+
+// ExitVariadic is called when production variadic is exited.
+func (s *BaseDaedalusListener) ExitVariadic(ctx *VariadicContext) {}
+
 // EnterParameterList is called when production parameterList is entered.
 func (s *BaseDaedalusListener) EnterParameterList(ctx *ParameterListContext) {}
 
