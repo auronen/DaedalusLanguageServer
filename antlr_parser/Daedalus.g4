@@ -12,28 +12,41 @@ IntegerLiteral: Digit+;
 FloatLiteral: PointFloat | ExponentFloat;
 StringLiteral: '"' (~["\r\n])* '"';
 
-Const: C O N S T;
+// keywords
 Var: V A R;
-If: I F;
-Int: I N T;
-Else: E L S E;
-Func: F U N C;
-StringKeyword: S T R I N G;
+Const: C O N S T;
 Class: C L A S S;
-Void: V O I D;
-Return: R E T U R N;
-Float: F L O A T;
 Prototype: P R O T O T Y P E;
 Instance: I N S T A N C E;
-Namespace: N A M E S P A C E;
+If: I F;
+Else: E L S E;
 Null: N U L L;
+Return: R E T U R N;
+Namespace: N A M E S P A C E;
+
+// keyword and type
+Func: F U N C;
+
+// types and pseudo-types
+Int: I N T;
+Float: F L O A T;
+StringKeyword: S T R I N G;
+Void: V O I D;
+Event: E V E N T;
+
+// zParserExtender
 Meta: M E T A;
+While: W H I L E;
+Continue: C O N T I N U E;
+Break: B R E A K;
+Test: T E S T;
 
 // preprocessor like macros
-Mif: M_ I F;
-Melif: M_ E L I F;
-Melse: M_ E L S E;
-Mendif: M_ E N D I F;
+Mif: M_ I F;			// #if
+Melif: M_ E L I F;		// #elif
+Melse: M_ E L S E;		// #else
+Mendif: M_ E N D I F;	// #endif
+
 
 LeftParen: '(';
 RightParen: ')';
@@ -128,15 +141,21 @@ blockDef:
 	) Semi;
 inlineDef: (constDef | varDecl | instanceDecl) Semi;
 
-macroBlock: (blockDef | (statement Semi) | ( ifBlockStatement Semi?));
+// macros
+macroBlock: (blockDef | (statement Semi) | ( ifBlockStatement Semi?) | ( whileBlockStatement Semi));
 macroCondition: expressionBlock;
 macroElseBlock: Melse (macroBlock)*;
 macroElseIfBlock: Melif macroCondition (macroBlock)*;
 macroIfBlock: Mif macroCondition (macroBlock)* ;
 macroDef: macroIfBlock ( macroElseIfBlock)*? ( macroElseBlock)? Mendif;
 
+// test else binding
+testCondition: expressionBlock;
+testBlock: Test testCondition statementBlock;
+testBlockStatement: testBlock ( elseIfBlock)*? ( elseBlock)?;
+
 functionDef:
-	Func typeReference nameNode parameterList statementBlock;
+	Func (typeReference | Event ) nameNode parameterList statementBlock;
 constDef:
 	Const typeReference (constValueDef | constArrayDef) (
 		',' (constValueDef | constArrayDef)
@@ -180,13 +199,15 @@ parameterDecl:
 		LeftBracket arraySize RightBracket
 	)?;
 statementBlock:
-	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef)*? RightBrace;
+	LeftBrace ((statement Semi) | ( ifBlockStatement Semi?) | macroDef | whileBlockStatement Semi)*? RightBrace;
 statement:
 	assignment
 	| returnStatement
 	| constDef
 	| varDecl
-	| expression;
+	| expression
+	| Continue
+	| Break;
 funcCall:
 	nameNode LeftParen (
 		funcArgExpression (',' funcArgExpression)*?
@@ -198,6 +219,10 @@ elseIfBlock: Else If ifCondition statementBlock;
 ifBlock: If ifCondition statementBlock;
 ifBlockStatement: ifBlock ( elseIfBlock)*? ( elseBlock)?;
 returnStatement: Return ( expressionBlock)?;
+
+whileCondition: expressionBlock;
+whileBlock: While whileCondition statementBlock;
+whileBlockStatement: whileBlock;
 
 funcArgExpression:
 	expressionBlock; // we use that to detect func call args

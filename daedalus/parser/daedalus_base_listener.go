@@ -75,6 +75,24 @@ func (s *BaseDaedalusListener) EnterMacroDef(ctx *MacroDefContext) {}
 // ExitMacroDef is called when production macroDef is exited.
 func (s *BaseDaedalusListener) ExitMacroDef(ctx *MacroDefContext) {}
 
+// EnterTestCondition is called when production testCondition is entered.
+func (s *BaseDaedalusListener) EnterTestCondition(ctx *TestConditionContext) {}
+
+// ExitTestCondition is called when production testCondition is exited.
+func (s *BaseDaedalusListener) ExitTestCondition(ctx *TestConditionContext) {}
+
+// EnterTestBlock is called when production testBlock is entered.
+func (s *BaseDaedalusListener) EnterTestBlock(ctx *TestBlockContext) {}
+
+// ExitTestBlock is called when production testBlock is exited.
+func (s *BaseDaedalusListener) ExitTestBlock(ctx *TestBlockContext) {}
+
+// EnterTestBlockStatement is called when production testBlockStatement is entered.
+func (s *BaseDaedalusListener) EnterTestBlockStatement(ctx *TestBlockStatementContext) {}
+
+// ExitTestBlockStatement is called when production testBlockStatement is exited.
+func (s *BaseDaedalusListener) ExitTestBlockStatement(ctx *TestBlockStatementContext) {}
+
 // EnterFunctionDef is called when production functionDef is entered.
 func (s *BaseDaedalusListener) EnterFunctionDef(ctx *FunctionDefContext) {}
 
@@ -260,6 +278,24 @@ func (s *BaseDaedalusListener) EnterReturnStatement(ctx *ReturnStatementContext)
 
 // ExitReturnStatement is called when production returnStatement is exited.
 func (s *BaseDaedalusListener) ExitReturnStatement(ctx *ReturnStatementContext) {}
+
+// EnterWhileCondition is called when production whileCondition is entered.
+func (s *BaseDaedalusListener) EnterWhileCondition(ctx *WhileConditionContext) {}
+
+// ExitWhileCondition is called when production whileCondition is exited.
+func (s *BaseDaedalusListener) ExitWhileCondition(ctx *WhileConditionContext) {}
+
+// EnterWhileBlock is called when production whileBlock is entered.
+func (s *BaseDaedalusListener) EnterWhileBlock(ctx *WhileBlockContext) {}
+
+// ExitWhileBlock is called when production whileBlock is exited.
+func (s *BaseDaedalusListener) ExitWhileBlock(ctx *WhileBlockContext) {}
+
+// EnterWhileBlockStatement is called when production whileBlockStatement is entered.
+func (s *BaseDaedalusListener) EnterWhileBlockStatement(ctx *WhileBlockStatementContext) {}
+
+// ExitWhileBlockStatement is called when production whileBlockStatement is exited.
+func (s *BaseDaedalusListener) ExitWhileBlockStatement(ctx *WhileBlockStatementContext) {}
 
 // EnterFuncArgExpression is called when production funcArgExpression is entered.
 func (s *BaseDaedalusListener) EnterFuncArgExpression(ctx *FuncArgExpressionContext) {}

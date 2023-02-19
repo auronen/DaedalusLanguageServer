@@ -35,6 +35,15 @@ type DaedalusListener interface {
 	// EnterMacroDef is called when entering the macroDef production.
 	EnterMacroDef(c *MacroDefContext)
 
+	// EnterTestCondition is called when entering the testCondition production.
+	EnterTestCondition(c *TestConditionContext)
+
+	// EnterTestBlock is called when entering the testBlock production.
+	EnterTestBlock(c *TestBlockContext)
+
+	// EnterTestBlockStatement is called when entering the testBlockStatement production.
+	EnterTestBlockStatement(c *TestBlockStatementContext)
+
 	// EnterFunctionDef is called when entering the functionDef production.
 	EnterFunctionDef(c *FunctionDefContext)
 
@@ -127,6 +136,15 @@ type DaedalusListener interface {
 
 	// EnterReturnStatement is called when entering the returnStatement production.
 	EnterReturnStatement(c *ReturnStatementContext)
+
+	// EnterWhileCondition is called when entering the whileCondition production.
+	EnterWhileCondition(c *WhileConditionContext)
+
+	// EnterWhileBlock is called when entering the whileBlock production.
+	EnterWhileBlock(c *WhileBlockContext)
+
+	// EnterWhileBlockStatement is called when entering the whileBlockStatement production.
+	EnterWhileBlockStatement(c *WhileBlockStatementContext)
 
 	// EnterFuncArgExpression is called when entering the funcArgExpression production.
 	EnterFuncArgExpression(c *FuncArgExpressionContext)
@@ -272,6 +290,15 @@ type DaedalusListener interface {
 	// ExitMacroDef is called when exiting the macroDef production.
 	ExitMacroDef(c *MacroDefContext)
 
+	// ExitTestCondition is called when exiting the testCondition production.
+	ExitTestCondition(c *TestConditionContext)
+
+	// ExitTestBlock is called when exiting the testBlock production.
+	ExitTestBlock(c *TestBlockContext)
+
+	// ExitTestBlockStatement is called when exiting the testBlockStatement production.
+	ExitTestBlockStatement(c *TestBlockStatementContext)
+
 	// ExitFunctionDef is called when exiting the functionDef production.
 	ExitFunctionDef(c *FunctionDefContext)
 
@@ -364,6 +391,15 @@ type DaedalusListener interface {
 
 	// ExitReturnStatement is called when exiting the returnStatement production.
 	ExitReturnStatement(c *ReturnStatementContext)
+
+	// ExitWhileCondition is called when exiting the whileCondition production.
+	ExitWhileCondition(c *WhileConditionContext)
+
+	// ExitWhileBlock is called when exiting the whileBlock production.
+	ExitWhileBlock(c *WhileBlockContext)
+
+	// ExitWhileBlockStatement is called when exiting the whileBlockStatement production.
+	ExitWhileBlockStatement(c *WhileBlockStatementContext)
 
 	// ExitFuncArgExpression is called when exiting the funcArgExpression production.
 	ExitFuncArgExpression(c *FuncArgExpressionContext)
