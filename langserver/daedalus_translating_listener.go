@@ -20,13 +20,15 @@ type DaedalusTranslatingListener struct {
 	source          string
 
 	config translationConfiguration
+	knownSymbols SymbolProvider
 }
 
 // DaedalusTranslatingListener ...
-func NewDaedalusTranslatingListener(source string, conf translationConfiguration) *DaedalusTranslatingListener {
+func NewDaedalusTranslatingListener(source string, knownSymbols SymbolProvider, conf translationConfiguration) *DaedalusTranslatingListener {
 	return &DaedalusTranslatingListener{
 		StringLocations: map[string][]SymbolPosition{},
 		source:          source,
+		knownSymbols:    knownSymbols,
 		config:          conf,
 	}
 }

@@ -145,13 +145,14 @@ func (h *LspHandler) initializeWorkspaces(ctx context.Context, workspaceURIs ...
 		}
 		h.logger.Infof("Setting up workspace %q", p)
 		ws := &LspWorkspace{
-			bufferManager:   NewBufferManager(),
-			parsedDocuments: newParseResultsManager(h.logger),
-			config:          h.config,
-			logger:          h.logger,
-			conn:            h.conn,
-			path:            p,
-			uri:             lsp.DocumentURI(v),
+			bufferManager:     NewBufferManager(),
+			parsedDocuments:   newParseResultsManager(h.logger),
+			config:            h.config,
+			logger:            h.logger,
+			conn:              h.conn,
+			path:              p,
+			translationConfig: initTranslationConfigWithPath(p),
+			uri:               lsp.DocumentURI(v),
 		}
 		ws.workspaceCtx, ws.cancelWorkspaceCtx = context.WithCancel(context.Background())
 		h.workspaces[p] = ws

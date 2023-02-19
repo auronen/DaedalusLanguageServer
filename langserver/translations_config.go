@@ -15,12 +15,12 @@ type translationConfiguration struct {
 	MemberVariables   []string `json:"memberVariables"`
 }
 
-func readConf(file string, globalConfig *translationConfiguration) {
+func readConf(file string, globalConfig *translationConfiguration) error {
 	// Open our jsonFile
 	jsonFile, err := os.Open(file)
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// defer the closing of our jsonFile so that we can parse it later on
@@ -33,12 +33,32 @@ func readConf(file string, globalConfig *translationConfiguration) {
 	// jsonFile's content into 'users' which we defined above
 	json.Unmarshal(byteValue, &globalConfig)
 
-	fmt.Fprintf(os.Stderr, "\nTranslation config: %v\n", prettyJSON(globalConfig))
+	// fmt.Fprintf(os.Stderr, "\nTranslation config: %v\n", prettyJSON(globalConfig))
+	return nil
 }
 
-func initTranslationConfig(ws LspWorkspace) translationConfiguration {
+func initTranslationConfig(ws *LspWorkspace) translationConfiguration {
+	if ws == nil {
+		fmt.Fprintf(os.Stderr, "The ws pointer was null in initTranslationConfig")
+		return translationConfiguration{}
+	}
 	var conf translationConfiguration
 	targetDir := filepath.Join(ws.path, ".dls", "translations.json")
-	readConf(targetDir, &conf)
+	err := readConf(targetDir, &conf)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "There was an error reading the translation config: %v", err)
+		return translationConfiguration{}
+	}
+	return conf
+}
+
+func initTranslationConfigWithPath(path string) translationConfiguration {
+	var conf translationConfiguration
+	targetDir := filepath.Join(path, ".dls", "translations.json")
+	err := readConf(targetDir, &conf)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "There was an error reading the translation config: %v", err)
+		return translationConfiguration{}
+	}
 	return conf
 }

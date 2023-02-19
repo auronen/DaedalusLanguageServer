@@ -65,7 +65,7 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 		},
 	)
 
-	fmt.Fprintf(os.Stderr, "duplicate string IDs {\n")
+	fmt.Fprintf(os.Stderr, "-> duplicate string IDs {\n")
 	for _, e := range dupl {
 		fmt.Fprintf(os.Stderr, "\t[%s]: %s\n", e.stringID, e.stringContent)
 	}
@@ -77,10 +77,11 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 
 	for _, w := range h.workspaces { // for every workspace
 		for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
-			//edits := make(map[uri.URI][]lsp.TextEdit)
 			file := strings.TrimPrefix(res.Source, path.Join(path.Dir(w.path), path.Base(path.Dir(w.path))))
+			// fmt.Fprintf(os.Stderr, "path: %s\n", uri.File(file))
+			fmt.Fprintf(os.Stderr, "Document: %s num of strings: %d\n", path.Base(file), len(res.StringLocations))
+
 			for i, entry := range ts { // for every entry in the translation files
-				//h.logger.Infof("entries: %d", i)
 				if positions, ok := res.StringLocations[entry.stringID]; ok {
 					ts[i].substituted = true
 					for _, pos := range positions {
@@ -139,24 +140,24 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 
 	if !response.Applied {
 		h.logger.Infof("Did not apply: ")
-		h.logger.Infof("%s", h.debugPrintEdits(edits))
 		//	failedFiles = append(failedFiles, strings.TrimPrefix(res.Source, path.Join(path.Dir(w.path), path.Base(path.Dir(w.path)))))
 		// This reports nothing...
 		//h.logger.Infof("Reason: %s", response.FailureReason)
 	}
+		h.logger.Infof("%s", h.debugPrintEdits(edits))
 
 	numOfEdits := 0
 	for ed := range edits {
 		numOfEdits += len(ed)
 	}
 
-	h.logger.Infof("Number of edits: %d", numOfEdits)
+	h.logger.Infof("Number of files: %d Number of edits: %d", len(edits), numOfEdits)
 
 	numberOfIDs := 0
 	for _, entry := range ts {
 		if !entry.substituted {
 			numberOfIDs++
-			fmt.Fprint(os.Stderr, entry.stringID+"\n")
+			// fmt.Fprint(os.Stderr, entry.stringID+"\n")
 		}
 	}
 	h.logger.Infof("Number of string IDs not substituted: %d", numberOfIDs)

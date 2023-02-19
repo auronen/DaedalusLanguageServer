@@ -50,9 +50,9 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 
 		h.logger.Infof("Substitution started")
 
-		for _, ws := range h.workspaces {
-			ws.parseGameAndMenuForTranslation(h.config)
-		}
+		// for _, ws := range h.workspaces {
+		// 	ws.parseGameAndMenuForTranslation(h.config)
+		// }
 		failedFiles := h.substituteTranslation(lang)
 		h.logger.Infof("Substitution done")
 		h.logger.Infof("Files failed to substitute (%d files)", len(failedFiles))
@@ -61,14 +61,16 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 		}
 		return nil
 	} else if params.Command == CommandTranslateAll {
-		h.logger.Infof("Just parsing stuff for translations")
-		for _, ws := range h.workspaces {
-			ws.parseGameAndMenuForTranslation(h.config)
-		}
-		h.logger.Infof("DONE")
-		var res lsp.PartialResultParams
+		h.logger.Infof("Substitution started")
 
-    	req.Reply(context.Background(), &res, nil)
+		failedFiles := h.substituteTranslation("cs")
+		h.logger.Infof("Substitution done")
+		h.logger.Infof("Files failed to substitute (%d files)", len(failedFiles))
+		for _, f := range failedFiles {
+			h.logger.Infof("%s", uri.File(f))
+		}
+
+		h.logger.Infof("DONE")
 		return nil
 	}
 	return req.Reply(req.Context(), nil, nil)

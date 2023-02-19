@@ -17,57 +17,21 @@ import (
 )
 
 type LspWorkspace struct {
-	path            string
-	uri             lsp.DocumentURI
-	logger          dls.Logger
-	bufferManager   *BufferManager
-	parsedDocuments *parseResultsManager
-	config          LspConfig
-	onceParseAll    sync.Once
-	conn            jsonrpc2.Conn
+	path              string
+	uri               lsp.DocumentURI
+	logger            dls.Logger
+	bufferManager     *BufferManager
+	parsedDocuments   *parseResultsManager
+	config            LspConfig
+	translationConfig translationConfiguration
+	onceParseAll      sync.Once
+	conn              jsonrpc2.Conn
 
 	parsedKnownSrcFiles  concurrentSet[string]
 	workspaceInitialized bool
 
 	workspaceCtx       context.Context
 	cancelWorkspaceCtx context.CancelFunc
-}
-
-func (ws *LspWorkspace) parseGameAndMenuForTranslation(config LspConfig) {
-	for _, v := range config.ProjectFiles {
-		// TODO: Only does Gothic.dat for now, add Menu.dat also
-		if !strings.Contains(v, "Gothic.src") {
-			continue
-		}
-		var err error
-		full := v
-		if filepath.IsAbs(full) || strings.ContainsAny(full, "\\/") {
-
-			if _, err := os.Stat(full); err != nil {
-				ws.logger.Errorf("Error user-define project file %s: %v", full, err)
-				continue
-			}
-		}
-		/*
-			else {
-				full, err = findPathAnywhereUpToRoot(wd, v)
-			}
-		*/
-		if err != nil {
-			ws.logger.Debugf("Did not parse %q: %v", v, err)
-			continue
-		}
-
-		if ws.parsedKnownSrcFiles.Contains(full) {
-			continue
-		}
-		ws.parsedKnownSrcFiles.Store(full)
-		_, err = ws.parsedDocuments.ParseSourceTranslation(ws.workspaceCtx, full, *ws)
-		if err != nil {
-			ws.logger.Errorf("Error parsing %s: %v", full, err)
-			continue
-		}
-	}
 }
 
 // TODO: We need to figure out a better way to handle workspaces.
@@ -84,7 +48,7 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 
 	exe, _ := os.Executable()
 	if f, err := findPath(filepath.Join(filepath.Dir(exe), "DaedalusBuiltins", "builtins.src")); err == nil {
-		_, err = ws.parsedDocuments.ParseSource(ws.workspaceCtx, f)
+		_, err = ws.parsedDocuments.ParseSource(ws.workspaceCtx, f, nil)
 		if err != nil {
 			ws.logger.Errorf("Error parsing %q: %v", f, err)
 			return
@@ -118,7 +82,7 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 	}
 
 	if f, err := findPath(filepath.Join(ws.path, ".dls", "externals", "builtins.src")); err == nil {
-		_, err = ws.parsedDocuments.ParseSource(ws.workspaceCtx, f)
+		_, err = ws.parsedDocuments.ParseSource(ws.workspaceCtx, f, ws)
 		if err != nil {
 			ws.logger.Errorf("Error parsing %q: %v", f, err)
 			return
@@ -152,7 +116,7 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 		if externalsSrc, err := findPathAnywhereUpToRoot(wd, filepath.Join("_externals", "externals.src")); err == nil {
 			if !ws.parsedKnownSrcFiles.Contains(externalsSrc) {
 				ws.parsedKnownSrcFiles.Store(externalsSrc)
-				customBuiltins, err := ws.parsedDocuments.ParseSource(ws.workspaceCtx, externalsSrc)
+				customBuiltins, err := ws.parsedDocuments.ParseSource(ws.workspaceCtx, externalsSrc, ws)
 				if err != nil {
 					ws.logger.Errorf("Error parsing %q: %v", externalsSrc, err)
 				} else {
@@ -191,7 +155,7 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 				continue
 			}
 			ws.parsedKnownSrcFiles.Store(full)
-			results, err := ws.parsedDocuments.ParseSource(ws.workspaceCtx, full)
+			results, err := ws.parsedDocuments.ParseSource(ws.workspaceCtx, full, ws)
 			if err != nil {
 				ws.logger.Errorf("Error parsing %s: %v", full, err)
 				continue

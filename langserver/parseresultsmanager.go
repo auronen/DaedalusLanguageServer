@@ -283,8 +283,8 @@ func (m *parseResultsManager) GetCtx(ctx context.Context, documentURI string) (*
 	}
 }
 
-func (m *parseResultsManager) Update(documentURI, content string) (*ParseResult, error) {
-	r := m.ParseAndValidateScript(documentURI, content)
+func (m *parseResultsManager) Update(documentURI, content string, ws *LspWorkspace) (*ParseResult, error) {
+	r := m.ParseAndValidateScript(documentURI, content, initTranslationConfig(ws))
 
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -474,7 +474,7 @@ func (m *parseResultsManager) validateFile(dPath string) ([]SyntaxError, error) 
 	return m.ValidateScript(dPath, buf.String()), nil
 }
 
-func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) ([]*ParseResult, error) {
+func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string, ws *LspWorkspace) ([]*ParseResult, error) {
 	resolvedPaths, err := m.resolveSrcPaths(srcFile, filepath.Dir(srcFile))
 	if err != nil {
 		return nil, err
@@ -525,7 +525,7 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) (
 					continue
 				}
 
-				parsed := m.ParseScript(r, buf.String(), lastMod)
+				parsed := m.ParseScript(r, buf.String(), lastMod, ws)
 
 				m.mtx.Lock()
 				m.parseResults[parsed.Source] = parsed
@@ -546,71 +546,6 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) (
 	}
 
 	m.logger.Infof("Done parsing %q: %d scripts.", srcFile, len(results))
-	return results, nil
-}
-
-func (m *parseResultsManager) ParseSourceTranslation(ctx context.Context, srcFile string, ws LspWorkspace) ([]*ParseResult, error) {
-	resolvedPaths, err := m.resolveSrcPaths(srcFile, filepath.Dir(srcFile))
-	if err != nil {
-		return nil, err
-	}
-	m.logger.Infof("Parsing %q for translation. This might take a while.", srcFile)
-
-	results := make([]*ParseResult, 0, len(resolvedPaths))
-
-	chanPaths := make(chan string, len(resolvedPaths))
-	for _, r := range resolvedPaths {
-		chanPaths <- r
-	}
-	close(chanPaths)
-
-	conf := initTranslationConfig(ws)
-
-	var wg sync.WaitGroup
-	numWorkers := m.getConcurrency()
-	wg.Add(numWorkers)
-	for i := 0; i < numWorkers; i++ {
-		go func(wg *sync.WaitGroup) {
-			defer wg.Done()
-
-			buf := bufferPool.Get().(*bytes.Buffer)
-			defer bufferPool.Put(buf)
-
-			decoder := m.decoderPool.Get().(*encoding.Decoder)
-			defer m.decoderPool.Put(decoder)
-
-			for r := range chanPaths {
-				if ctx.Err() != nil {
-					return
-				}
-				f, err := os.Open(r)
-				if err != nil {
-					continue
-				}
-				decoder.Reset()
-				translated := decoder.Reader(f)
-				buf.Reset()
-				_, err = buf.ReadFrom(translated)
-				f.Close()
-				if err != nil {
-					continue
-				}
-
-				parsed := m.ParseScriptsTranslations(r, buf.String(), conf)
-
-				m.mtx.Lock()
-				if m.parseResults[parsed.Source] != nil {
-					m.parseResults[parsed.Source].StringLocations = parsed.StringLocations
-				}
-				results = append(results, parsed)
-				m.mtx.Unlock()
-			}
-		}(&wg)
-	}
-
-	wg.Wait()
-
-	m.logger.Infof("Done parsing %q: %d scripts. (translation)", srcFile, len(results))
 	return results, nil
 }
 
@@ -639,7 +574,7 @@ func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 		return nil, err
 	}
 
-	parsed := m.ParseScript(dFile, buf.String(), stat.ModTime())
+	parsed := m.ParseScript(dFile, buf.String(), stat.ModTime(), nil)
 
 	m.mtx.Lock()
 	m.parseResults[parsed.Source] = parsed

@@ -39,11 +39,13 @@ func (p *parserPool) Put(v DaedalusGrammarParser) {
 }
 
 // ParseAndValidateScript ...
-func (m *parseResultsManager) ParseAndValidateScript(source, content string) *ParseResult {
+func (m *parseResultsManager) ParseAndValidateScript(source, content string, conf translationConfiguration) *ParseResult {
 	stateful := NewDaedalusStatefulListener(source, m)
 	validating := NewDaedalusValidatingListener(source, m)
+
+	translating := NewDaedalusTranslatingListener(source, m, conf)
 	errListener := &SyntaxErrorListener{}
-	m.ParseScriptListener(source, content, combineListeners(stateful, validating), errListener)
+	m.ParseScriptListener(source, content, combineListeners(combineListeners(stateful, validating), translating), errListener)
 
 	result := &ParseResult{
 		SyntaxErrors:    errListener.SyntaxErrors,
@@ -55,23 +57,12 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string) *Pa
 		Instances:       stateful.Globals.Instances,
 		Namespaces:      stateful.Namespaces,
 		Source:          source,
+		StringLocations: translating.StringLocations,
 		lastModifiedAt:  time.Now(),
 	}
 	return result
 }
 
-// ParseScriptsTranslations
-func (m *parseResultsManager) ParseScriptsTranslations(source, content string, conf translationConfiguration) *ParseResult {
-	translating := NewDaedalusTranslatingListener(source, conf)
-
-	m.ParseScriptListener(source, content, translating, &SyntaxErrorListener{})
-
-	result := &ParseResult{
-		StringLocations: translating.StringLocations,
-		Source:          source,
-	}
-	return result
-}
 
 // ParseScriptListener ...
 func (m *parseResultsManager) ParseScriptListener(source, content string, listener parser.DaedalusListener, errListener antlr.ErrorListener) {
@@ -79,7 +70,7 @@ func (m *parseResultsManager) ParseScriptListener(source, content string, listen
 }
 
 // ParseScript ...
-func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt time.Time) *ParseResult {
+func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt time.Time, ws *LspWorkspace) *ParseResult {
 	m.mtx.Lock()
 	if existing, ok := m.parseResults[source]; ok && existing.lastModifiedAt == lastModifiedAt {
 		m.mtx.Unlock()
@@ -88,9 +79,10 @@ func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt
 	m.mtx.Unlock()
 
 	listener := NewDaedalusStatefulListener(source, m)
+	translating := NewDaedalusTranslatingListener(source, m, initTranslationConfig(ws))
 	errListener := &SyntaxErrorListener{}
 
-	m.ParseScriptListener(source, content, listener, errListener)
+	m.ParseScriptListener(source, content, combineListeners(translating, listener), errListener)
 
 	result := &ParseResult{
 		SyntaxErrors:    errListener.SyntaxErrors,
@@ -101,6 +93,7 @@ func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt
 		Prototypes:      listener.Globals.Prototypes,
 		Instances:       listener.Globals.Instances,
 		Namespaces:      listener.Namespaces,
+		StringLocations: translating.StringLocations,
 		Source:          source,
 		lastModifiedAt:  lastModifiedAt,
 	}

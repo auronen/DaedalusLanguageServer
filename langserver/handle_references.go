@@ -196,7 +196,7 @@ func (h *LspWorkspace) getAllReferences(req context.Context, params lsp.Referenc
 					}
 
 					if parsed == nil {
-						parsed = h.parsedDocuments.ParseScript(".", buffer.String(), lastMod)
+						parsed = h.parsedDocuments.ParseScript(".", buffer.String(), lastMod, nil)
 					}
 					if parsed != nil {
 						if _, ok := parsed.LookupScopedVariable(symbol.DefinitionIndex{
