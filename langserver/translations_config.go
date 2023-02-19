@@ -19,7 +19,14 @@ func readConf(file string, globalConfig *translationConfiguration) error {
 	// Open our jsonFile
 	jsonFile, err := os.Open(file)
 	// if we os.Open returns an error then handle it
-	if err != nil {
+	if os.IsNotExist(err) {
+		// TODO: create translations.json file based on G1 or G2
+		f, err := os.Create("translations.json")
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+	} else if err != nil {
 		return err
 	}
 
@@ -28,7 +35,6 @@ func readConf(file string, globalConfig *translationConfiguration) error {
 
 	// read our opened xmlFile as a byte array.
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'users' which we defined above
 	json.Unmarshal(byteValue, &globalConfig)
