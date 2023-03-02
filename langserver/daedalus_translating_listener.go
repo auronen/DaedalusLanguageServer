@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
-	// lsp "github.com/kirides/DaedalusLanguageServer/protocol"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/parser"
 )
 
@@ -16,8 +15,9 @@ import (
 type DaedalusTranslatingListener struct {
 	parser.BaseDaedalusListener
 
-	StringLocations map[string][]SymbolPosition
-	source          string
+	StringLocations    map[string][]SymbolPosition
+	UnresolvedStrings  []UnresolvedString
+	source             string
 
 	config translationConfiguration
 	knownSymbols SymbolProvider
@@ -44,6 +44,50 @@ func (l *DaedalusTranslatingListener) EnterFunctionDef(ctx *parser.FunctionDefCo
 	// Parse dialogues
 	l.parseAI_OutputFuncCallStatements(statements)
 
+}
+
+// EnterFunctionCall ..
+func (l *DaedalusTranslatingListener) EnterFuncCall(ctx *parser.FuncCallContext) {
+	name := ctx.NameNode().GetText()
+
+	if strings.EqualFold(name, "b_logentry") {
+		l.UnresolvedStrings = append(l.UnresolvedStrings,
+			newUnresolvedSymbol(
+				l.FindFunctionName(ctx) + "." + ctx.AllFuncArgExpression()[0].GetText(),
+				ctx.AllFuncArgExpression()[1].GetText(),
+				ctx.GetStart().GetLine(),
+			))
+	} else if strings.HasPrefix(strings.ToLower(name), "doc_printline")  {
+		cont := ctx.AllFuncArgExpression()[2].GetText()
+
+		// skip empty strings "" and strings with special characters
+		if (len(cont) <= 2 && strings.ContainsRune(cont, '"')) || !HasLetter(cont){
+			return
+		}
+
+		l.UnresolvedStrings = append(l.UnresolvedStrings,
+			newUnresolvedSymbol(
+				l.FindFunctionName(ctx),
+				cont,
+				ctx.GetStart().GetLine(),
+			))
+	   } else if strings.EqualFold(name, "PrintScreen") {
+		l.UnresolvedStrings = append(l.UnresolvedStrings,
+			newUnresolvedSymbol(
+				l.FindFunctionName(ctx),
+				ctx.AllFuncArgExpression()[0].GetText(),
+				ctx.GetStart().GetLine(),
+			))
+	}
+}
+
+// findf function name up the antlr.Tree
+func (l *DaedalusTranslatingListener) FindFunctionName(root antlr.Tree) string {
+	if funcCall, ok := root.GetParent().(*parser.FunctionDefContext); ok {
+		return funcCall.NameNode().GetText()
+	} else {
+		return l.FindFunctionName(root.GetParent())
+	}
 }
 
 // / Searches the statement block for AI_Output calls
@@ -134,7 +178,14 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		// 	return
 		// }
 		if strings.EqualFold(fncName, "Info_AddChoice") {
-			symbolID := fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
+			fnc := fncCtx.AllFuncArgExpression()[0].GetText()
+			dia := fncCtx.AllFuncArgExpression()[2].GetText()
+			var symbolID string
+			if strings.EqualFold(dia, "DIA_SLD_753_Baloro_Exit_Info") { // TODO: hack for G1
+				symbolID = l.FindFunctionName(ctx) + "." + fnc + "." + dia
+			} else {
+				symbolID = fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
+			}
 			line := ctx.ValueContext.GetStart().GetLine()
 			start := ctx.ValueContext.GetStart().GetColumn()
 			end := start + utf8.RuneCountInString(content)

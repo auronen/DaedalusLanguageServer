@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sort"
 )
 
 // simpleCSVentry struct holds the id and the text
@@ -16,10 +17,32 @@ import (
 type simpleCSVentry struct {
 	context string
 	text    string
+
+	// for sorting
+	pth     string
+	ln      int
 }
 
-func (c *simpleCSVentry) GetEscapedSimpleCSV() string {
+func (c *simpleCSVentry) GetEscapedCSV() string {
 	return "\"" + c.context + "\",\"" + c.text + "\""
+}
+
+func newSimpleCSVentryFromStringLocations(id string, sl SymbolPosition) simpleCSVentry {
+	if sl.quotes {
+		return simpleCSVentry{
+			context: id,
+			text:    sl.content,
+			pth:     sl.document,
+			ln:      sl.line,
+		}
+	} else {
+		return simpleCSVentry{
+			context: id,
+			text:    strings.TrimPrefix(sl.content, "//"),
+			pth:     sl.document,
+			ln:      sl.line,
+		}
+	}
 }
 
 // CSVentry represents one entry in the complex tranlsation csv file
@@ -53,6 +76,8 @@ func newCSVentry(loc, src, trgt, id, fuzz, ctx, tr_c, dev_c, pth string, lN int)
 		lineNumber:          lN,
 	}
 }
+
+
 
 func (c *CSVentry) GetEscapedCSV() string {
 	src := c.source
@@ -191,8 +216,33 @@ func newsimpleCSVentryTranslationStringEntry(s TranslationStringEntry, id int) s
 	}
 }
 */
-//                                   "location","source","target","id","fuzzy","context","translator_comments","developer_comments"
+
+// write the simple CSVentry slice as an escaped CSV file with the filename: `filename`_`lang`.csv
+func simpleCsvWrite(entries []simpleCSVentry, filename, lang string) error {
+	// create path
+	repoRoot, err := findRepoRoot()
+	if err != nil {
+		return err
+	}
+	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations", lang), os.ModePerm)
+	file, err := os.Create(filepath.Join(repoRoot, ".translations", lang, filename+"_"+lang+".csv"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := bufio.NewWriter(file)
+
+	defer writer.Flush()
+
+	for _, entry := range entries {
+		writer.WriteString(entry.GetEscapedCSV() + "\n")
+	}
+	return nil
+}
+
 // header for the CSV files
+//                                   "location", "source", "target", "id", "fuzzy", "context", "translator_comments", "developer_comments"
 var CSVHeader CSVentry = newCSVentry("location", "source", "target", "id", "fuzzy", "context", "translator_comments", "developer_comments", "", 0)
 
 // write the CSVentry slice as an escaped CSV file with the filename: `filename`_`lang`.csv
@@ -295,4 +345,43 @@ func csvGetLanguages() (languages []string, err error) {
 		}
 	}
 	return langs, nil
+}
+
+// Generates one giant escaped csv file with all translatable strings
+func (h *LspHandler) generateAllsimpleCSV() {
+	var what string
+	var ws_key string
+	for key, val := range h.workspaces {
+		if val.wsID == GOTHIC {
+			what = val.wsID
+			ws_key = key
+		} else if val.wsID == MENU {
+			what = val.wsID
+			ws_key = key
+		}
+	}
+
+	h.logger.Infof("Generating %s", what)
+
+	entries := make([]simpleCSVentry, 0, 200)
+
+	for _, res := range h.workspaces[ws_key].parsedDocuments.parseResults {
+		for content, pos_array := range res.StringLocations {
+			if len(pos_array) > 0 {
+				entries = append(entries, newSimpleCSVentryFromStringLocations(content, pos_array[0]))
+			}
+		}
+	}
+
+	h.logger.Infof("Got %d lines", len(entries))
+
+	// Sort entries by file and then by line (ensures comfortable translations)
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].pth != entries[j].pth {
+			return entries[i].pth < entries[j].pth
+		}
+		return entries[i].ln < entries[j].ln
+	})
+
+	simpleCsvWrite(entries, what, "translations")
 }

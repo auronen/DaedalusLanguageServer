@@ -45,7 +45,6 @@ func readConf(file string, globalConfig *translationConfiguration) error {
 
 func initTranslationConfig(ws *LspWorkspace) translationConfiguration {
 	if ws == nil {
-		fmt.Fprintf(os.Stderr, "The ws pointer was null in initTranslationConfig")
 		return translationConfiguration{}
 	}
 	var conf translationConfiguration

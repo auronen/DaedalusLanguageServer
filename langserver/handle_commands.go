@@ -2,6 +2,12 @@ package langserver
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
+
+	// "path"
+	// "strings"
 
 	dls "github.com/kirides/DaedalusLanguageServer"
 	lsp "github.com/kirides/DaedalusLanguageServer/protocol"
@@ -61,17 +67,56 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 		}
 		return nil
 	} else if params.Command == CommandTranslateAll {
-		h.logger.Infof("Substitution started")
+		h.logger.Infof("Generating translation files")
 
-		failedFiles := h.substituteTranslation("cs")
-		h.logger.Infof("Substitution done")
-		h.logger.Infof("Files failed to substitute (%d files)", len(failedFiles))
-		for _, f := range failedFiles {
-			h.logger.Infof("%s", uri.File(f))
+		// h.generateAllsimpleCSV()
+		// prints strings that need to be abstracted away in translation files
+
+		num := 0
+		for _, w := range h.workspaces { // for every workspace
+			for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
+				for _, us := range res.UnresolvedString {
+					fmt.Fprintf(os.Stderr, "%s:%d,%s,%s\n", res.Source, us.line, us.id, us.content)
+					num += 1
+				}
+			}
+		}
+		h.logger.Infof("DONE %d strings", num)
+
+
+		// num := 0
+		// for _, w := range h.workspaces { // for every workspace
+		// 	for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
+		// 		// fmt.Fprintf(os.Stderr, "%s\n", strings.ToLower(path.Base(key)));
+		// 		// if strings.EqualFold(strings.ToLower(path.Base(key)), "potions.d") {
+		// 			for key, us := range res.StringLocations {
+		// 				if len(us) > 0 {
+		// 					fmt.Fprintf(os.Stderr, "\"%s\",\"%s\"\n", key, us[0].content)
+		// 					num += 1
+		// 				}
+		// 			}
+		// 		// }
+		// 	}
+		// }
+		h.logger.Infof("DONE %d strings", num)
+		return nil
+	} else if params.Command == CommandTranslateAutorun {
+		h.logger.Infof("Generating translation files")
+
+		for _, w := range h.workspaces { // for every workspace
+			for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
+				for key := range res.StringLocations {
+					if strings.Contains(key, ".") {
+						parts := strings.Split(key, ".")
+						if len(parts) == 3 {
+							fmt.Fprintf(os.Stderr, "\"%s\",\"%s\"\n", parts[1] + "." + parts[2], key)
+						}
+					}
+				}
+			}
 		}
 
 		h.logger.Infof("DONE")
-		return nil
 	}
 	return req.Reply(req.Context(), nil, nil)
 }

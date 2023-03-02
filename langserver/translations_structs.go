@@ -46,6 +46,14 @@ func newSymbolPosition(doc, cont string, ln, st, en int, params ...interface{}) 
 			translation_comment = tr_com
 		}
 	}
+	if par {
+		// if it is a string literal, start after the starting quote and stop before the last quote
+		st += 1;
+		en -= 1;
+	} else {
+		// if it was a comment, skip the double slash
+		st += 2;
+	}
 	return SymbolPosition{
 		document:            doc,
 		content:             cont,
@@ -54,5 +62,19 @@ func newSymbolPosition(doc, cont string, ln, st, en int, params ...interface{}) 
 		end:                 en,
 		quotes:              par,
 		translation_comment: translation_comment,
+	}
+}
+
+type UnresolvedString struct {
+	id	    string
+	content string
+	line    int
+}
+
+func newUnresolvedSymbol(id, con string, line int) UnresolvedString {
+	return UnresolvedString{
+		id: id,
+		content: con,
+		line: line,
 	}
 }

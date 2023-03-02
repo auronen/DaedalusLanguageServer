@@ -16,7 +16,40 @@ import (
 	"go.lsp.dev/uri"
 )
 
+const (
+	CAMERA		string = "camera"
+	FIGHT		string = "fight"
+	GOTHIC		string = "gothic"
+	MENU		string = "menu"
+	MUSIC		string = "music"
+	PARTICLEFX	string = "particlefx"
+	SFX			string = "sfx"
+	VISUALFX	string = "visualfx"
+)
+
+func (ws *LspWorkspace) assignWorkspaceID(path string) {
+	switch {
+    case strings.Contains(strings.ToLower(path), CAMERA):
+		ws.wsID = CAMERA
+    case strings.Contains(strings.ToLower(path), FIGHT):
+		ws.wsID = FIGHT
+    case strings.Contains(strings.ToLower(path), GOTHIC):
+		ws.wsID = GOTHIC
+    case strings.Contains(strings.ToLower(path), MENU):
+		ws.wsID = MENU
+    case strings.Contains(strings.ToLower(path), MUSIC):
+		ws.wsID = MUSIC
+    case strings.Contains(strings.ToLower(path), PARTICLEFX):
+		ws.wsID = PARTICLEFX
+    case strings.Contains(strings.ToLower(path), SFX):
+		ws.wsID = SFX
+    case strings.Contains(strings.ToLower(path), VISUALFX):
+		ws.wsID = VISUALFX
+	}
+}
+
 type LspWorkspace struct {
+	wsID              string
 	path              string
 	uri               lsp.DocumentURI
 	logger            dls.Logger
@@ -164,6 +197,7 @@ func (ws *LspWorkspace) tryInitializeWorkspace(ctx context.Context, params *lsp.
 				continue
 			}
 			ws.parsedKnownSrcFiles.Store(full)
+			ws.assignWorkspaceID(full)
 			results, err := ws.parsedDocuments.ParseSource(ws.workspaceCtx, full, ws)
 			if err != nil {
 				ws.logger.Errorf("Error parsing %s: %v", full, err)

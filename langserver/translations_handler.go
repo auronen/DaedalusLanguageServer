@@ -85,35 +85,18 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 				if positions, ok := res.StringLocations[entry.stringID]; ok {
 					ts[i].substituted = true
 					for _, pos := range positions {
-						if pos.quotes { // if it had quotes
-							edits[uri.File(file)] = append(edits[uri.File(file)], lsp.TextEdit{
-								Range: lsp.Range{
-									Start: lsp.Position{
-										Line:      uint32(pos.line - 1),
-										Character: uint32(pos.start),
-									},
-									End: lsp.Position{
-										Line:      uint32(pos.line - 1),
-										Character: uint32(pos.end),
-									},
+						edits[uri.File(file)] = append(edits[uri.File(file)], lsp.TextEdit{
+							Range: lsp.Range{
+								Start: lsp.Position{
+									Line:      uint32(pos.line - 1),
+									Character: uint32(pos.start),
 								},
-								NewText: "\"" + entry.stringContent + "\"",
-							})
-						} else { // if it was a comment
-							edits[uri.File(file)] = append(edits[uri.File(file)], lsp.TextEdit{
-								Range: lsp.Range{
-									Start: lsp.Position{
-										Line:      uint32(pos.line - 1),
-										Character: uint32(pos.start),
-									},
-									End: lsp.Position{
-										Line:      uint32(pos.line - 1),
-										Character: uint32(pos.end),
-									},
+								End: lsp.Position{
+									Line:      uint32(pos.line - 1),
+									Character: uint32(pos.end),
 								},
-								NewText: "//" + strings.TrimSpace(entry.stringContent),
-							})
-						}
+							},
+						})
 					}
 				}
 			}
@@ -174,4 +157,20 @@ func (h *LspHandler) debugPrintEdits(edits map[uri.URI][]lsp.TextEdit) string {
 		}
 	}
 	return sb.String()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+func (h *LspHandler) generateTranslationFiles() {
+
 }
