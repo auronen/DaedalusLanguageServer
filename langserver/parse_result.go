@@ -24,6 +24,7 @@ type ParseResult struct {
 	// Translation related fields
 	StringLocations map[string][]SymbolPosition
 	UnresolvedString []UnresolvedString
+	logs            map[string][]logPos
 }
 
 func (r *ParseResult) CountSymbols() int64 {

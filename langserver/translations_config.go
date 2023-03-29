@@ -13,6 +13,7 @@ type translationConfiguration struct {
 	FileMasks         []string `json:"fileMasks"`
 	FunctionBlackList []string `json:"functionBlackList"`
 	MemberVariables   []string `json:"memberVariables"`
+	SymbolBlacklist   []string `json:"SymbolBlacklist"`
 }
 
 func readConf(file string, globalConfig *translationConfiguration) error {
@@ -20,8 +21,12 @@ func readConf(file string, globalConfig *translationConfiguration) error {
 	jsonFile, err := os.Open(file)
 	// if we os.Open returns an error then handle it
 	if os.IsNotExist(err) {
+		path, err := findRepoRoot();
+		if err != nil {
+			return err
+		}
 		// TODO: create translations.json file based on G1 or G2
-		f, err := os.Create("translations.json")
+		f, err := os.Create(filepath.Join(path, ".dls", "translations.json"))
 		if err != nil {
 			return err
 		}

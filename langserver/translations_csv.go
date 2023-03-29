@@ -78,6 +78,35 @@ func newCSVentry(loc, src, trgt, id, fuzz, ctx, tr_c, dev_c, pth string, lN int)
 }
 
 
+func newCSVentryFromStringLocation(id string, sl SymbolPosition) CSVentry {
+	if sl.quotes {
+		return CSVentry{
+			location:            sl.document + ":" + fmt.Sprintf("%d",sl.line),
+			source:              trimQuotes(sl.content),
+			target:              trimQuotes(sl.content),
+			id:                  "",
+			fuzzy:               "",
+			context:             id,
+			translator_comments: sl.translation_comment,
+			developer_comments:  "",
+			path:                sl.document,
+			lineNumber:          sl.line,
+		}
+	} else {
+		return CSVentry{
+			location:            sl.document + ":" + fmt.Sprintf("%d",sl.line),
+			source:              strings.TrimPrefix(sl.content, "//"),
+			target:              strings.TrimPrefix(sl.content, "//"),
+			id:                  "",
+			fuzzy:               "",
+			context:             id,
+			translator_comments: sl.translation_comment,
+			developer_comments:  "",
+			path:                sl.document,
+			lineNumber:          sl.line,
+		}
+	}
+}
 
 func (c *CSVentry) GetEscapedCSV() string {
 	src := c.source
@@ -224,8 +253,10 @@ func simpleCsvWrite(entries []simpleCSVentry, filename, lang string) error {
 	if err != nil {
 		return err
 	}
-	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations", lang), os.ModePerm)
-	file, err := os.Create(filepath.Join(repoRoot, ".translations", lang, filename+"_"+lang+".csv"))
+	// _ = os.MkdirAll(filepath.Join(repoRoot, ".translations", lang), os.ModePerm)
+	// file, err := os.Create(filepath.Join(repoRoot, ".translations", lang, filename+"_"+lang+".csv"))
+	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations"), os.ModePerm)
+	file, err := os.Create(filepath.Join(repoRoot, ".translations", filename + ".csv"))
 	if err != nil {
 		return err
 	}
@@ -252,8 +283,8 @@ func csvWrite(entries []CSVentry, filename, lang string) error {
 	if err != nil {
 		return err
 	}
-	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations", lang), os.ModePerm)
-	file, err := os.Create(filepath.Join(repoRoot, ".translations", lang, filename+"_"+lang+".csv"))
+	_ = os.MkdirAll(filepath.Join(repoRoot, ".translations"), os.ModePerm)
+	file, err := os.Create(filepath.Join(repoRoot, ".translations", filename + ".csv"))
 	if err != nil {
 		return err
 	}
@@ -375,13 +406,50 @@ func (h *LspHandler) generateAllsimpleCSV() {
 
 	h.logger.Infof("Got %d lines", len(entries))
 
+	simpleCsvWrite(entries, what, "translations")
+}
+
+
+
+
+
+
+
+// Generates one giant escaped csv file with all translatable strings
+func (h *LspHandler) generateAllCSV() {
+	var what string
+	var ws_key string
+	for key, val := range h.workspaces {
+		if val.wsID == GOTHIC {
+			what = val.wsID
+			ws_key = key
+		} else if val.wsID == MENU {
+			what = val.wsID
+			ws_key = key
+		}
+	}
+
+	h.logger.Infof("Generating %s", what)
+
+	entries := make([]CSVentry, 0, 200)
+
+	for _, res := range h.workspaces[ws_key].parsedDocuments.parseResults {
+		for content, pos_array := range res.StringLocations {
+			if len(pos_array) > 0 {
+				entries = append(entries, newCSVentryFromStringLocation(content, pos_array[0]))
+			}
+		}
+	}
+
+	h.logger.Infof("Got %d lines", len(entries))
+
 	// Sort entries by file and then by line (ensures comfortable translations)
 	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].pth != entries[j].pth {
-			return entries[i].pth < entries[j].pth
+		if entries[i].path != entries[j].path {
+			return entries[i].path < entries[j].path
 		}
-		return entries[i].ln < entries[j].ln
+		return entries[i].lineNumber < entries[j].lineNumber
 	})
 
-	simpleCsvWrite(entries, what, "translations")
+	csvWrite(entries, what, "translations")
 }

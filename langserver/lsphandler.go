@@ -235,6 +235,8 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 						CommandTranslateAll,
 						CommandTranslateAutorun,
 						CommandTranslateSubstitute,
+						CommandTranslateUnresolved,
+						CommandTranslateLogs,
 					},
 				},
 				CompletionProvider: lsp.CompletionOptions{

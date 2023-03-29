@@ -1,5 +1,10 @@
 package langserver
 
+import (
+	// lsp "github.com/kirides/DaedalusLanguageServer/protocol"
+
+	"go.lsp.dev/uri"
+)
 // TranslatedString represents string read from a csv file
 //
 // stringId      - string identifier
@@ -69,12 +74,26 @@ type UnresolvedString struct {
 	id	    string
 	content string
 	line    int
+	start   int
+	end     int
 }
 
-func newUnresolvedSymbol(id, con string, line int) UnresolvedString {
+func newUnresolvedSymbol(id, con string, line, start, end int) UnresolvedString {
 	return UnresolvedString{
 		id: id,
 		content: con,
 		line: line,
 	}
 }
+
+
+type logPos struct {
+	function_line int
+	entryID string
+	content string
+	uri uri.URI
+	line int
+	start int
+	end int
+}
+

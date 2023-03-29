@@ -11,6 +11,7 @@ import (
 
 	dls "github.com/kirides/DaedalusLanguageServer"
 	lsp "github.com/kirides/DaedalusLanguageServer/protocol"
+	// og "go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
@@ -19,6 +20,8 @@ const (
 	CommandTranslateAll        string = "daedalus.dls-all"
 	CommandTranslateAutorun    string = "daedalus.dls-autorun"
 	CommandTranslateSubstitute string = "daedalus.dls-edit"
+	CommandTranslateUnresolved string = "daedalus.dls-unresolved"
+	CommandTranslateLogs       string = "daedalus.dls-logs"
 )
 
 func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
@@ -31,7 +34,7 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 			h.logger.Errorf("Error geeting file names: %v", err)
 		}
 
-		languages = []string{"cs", "en", "de", "es"}
+		// languages = []string{"cs", "en", "tr", "zh_Hans"}
 
 		buttons := make([]lsp.MessageActionItem, 0)
 		for _, lang := range languages {
@@ -67,38 +70,12 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 		}
 		return nil
 	} else if params.Command == CommandTranslateAll {
-		h.logger.Infof("Generating translation files")
+		h.logger.Infof("Generating translation file.")
 
 		// h.generateAllsimpleCSV()
-		// prints strings that need to be abstracted away in translation files
+		h.generateAllCSV()
 
-		num := 0
-		for _, w := range h.workspaces { // for every workspace
-			for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
-				for _, us := range res.UnresolvedString {
-					fmt.Fprintf(os.Stderr, "%s:%d,%s,%s\n", res.Source, us.line, us.id, us.content)
-					num += 1
-				}
-			}
-		}
-		h.logger.Infof("DONE %d strings", num)
-
-
-		// num := 0
-		// for _, w := range h.workspaces { // for every workspace
-		// 	for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
-		// 		// fmt.Fprintf(os.Stderr, "%s\n", strings.ToLower(path.Base(key)));
-		// 		// if strings.EqualFold(strings.ToLower(path.Base(key)), "potions.d") {
-		// 			for key, us := range res.StringLocations {
-		// 				if len(us) > 0 {
-		// 					fmt.Fprintf(os.Stderr, "\"%s\",\"%s\"\n", key, us[0].content)
-		// 					num += 1
-		// 				}
-		// 			}
-		// 		// }
-		// 	}
-		// }
-		h.logger.Infof("DONE %d strings", num)
+		h.logger.Infof("DONE generating translation file. :herosmile:")
 		return nil
 	} else if params.Command == CommandTranslateAutorun {
 		h.logger.Infof("Generating translation files")
@@ -117,6 +94,30 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 		}
 
 		h.logger.Infof("DONE")
+	} else if params.Command == CommandTranslateUnresolved {
+		h.logger.Infof("Generating unresolved strings.")
+		// prints strings that need to be abstracted away in translation files
+		num := 0
+		for _, w := range h.workspaces { // for every workspace
+			for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
+				for _, us := range res.UnresolvedString {
+					// if strings.HasPrefix(us.content, "const") {
+					// 	fmt.Fprintf(os.Stderr, "%s:%d,%s\n", res.Source, us.line, us.content)
+					// 	num += 1
+					// }
+
+					fmt.Fprintf(os.Stderr, "%s:%d,%s,%s\n", res.Source, us.line, us.id, us.content)
+					num += 1
+				}
+			}
+		}
+		h.logger.Infof("DONE %d strings", num)
+	} else if params.Command == CommandTranslateLogs {
+		h.logger.Infof("Generating and substituting logs")
+
+		num := h.substsLogs()
+
+		h.logger.Infof("DONE %d strings", num)
 	}
 	return req.Reply(req.Context(), nil, nil)
 }

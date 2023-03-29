@@ -85,6 +85,12 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 				if positions, ok := res.StringLocations[entry.stringID]; ok {
 					ts[i].substituted = true
 					for _, pos := range positions {
+						var cont string
+						if pos.quotes {
+							cont = strings.ReplaceAll(entry.stringContent, "\"", "'");
+						} else {
+							cont = entry.stringContent
+						}
 						edits[uri.File(file)] = append(edits[uri.File(file)], lsp.TextEdit{
 							Range: lsp.Range{
 								Start: lsp.Position{
@@ -96,6 +102,7 @@ func (h *LspHandler) substituteTranslation(language string) (failedFiles []strin
 									Character: uint32(pos.end),
 								},
 							},
+							NewText: cont,
 						})
 					}
 				}
@@ -173,4 +180,85 @@ func (h *LspHandler) debugPrintEdits(edits map[uri.URI][]lsp.TextEdit) string {
 
 func (h *LspHandler) generateTranslationFiles() {
 
+}
+
+
+
+
+
+func (h *LspHandler) substsLogs() int {
+
+	edits := make(map[uri.URI][]lsp.TextEdit)
+
+	intermediate := make(map[string][]logPos)
+	num := 0
+	for _, w := range h.workspaces { // for every workspace
+		for _, res := range w.parsedDocuments.parseResults { // for all parsed documents
+			for key, values := range res.logs {
+				intermediate[key] = append(intermediate[key], values...)
+				num += 1
+			}
+		}
+	}
+	h.logger.Infof("%s", h.debugPrintEdits(edits))
+
+	for _, log_entries := range intermediate {
+		var constants string
+		var uri_tmp uri.URI
+		var fnc_line int
+		for i, l := range log_entries {
+			var line string
+			if strings.HasPrefix(strings.ToLower(l.entryID), "use_") {
+				line = l.entryID[4:] + "_" + fmt.Sprint(i+1)
+			} else if strings.HasPrefix(strings.ToLower(l.entryID), "use") {
+				line = l.entryID[3:] + "_" + fmt.Sprint(i+1)
+			} else {
+				line = l.entryID + "_" + fmt.Sprint(i+1)
+			}
+			edits[l.uri] = append(edits[l.uri], lsp.TextEdit{
+				Range: lsp.Range{
+					Start: lsp.Position{
+						Line: uint32(l.line),
+						Character: uint32(l.start),
+					},
+					End: lsp.Position{
+						Line: uint32(l.line),
+						Character: uint32(l.end),
+					},
+				},
+				NewText: line,
+			})
+			// fmt.Fprintf(os.Stderr, "const string %s = %s;\n", line, l.content)
+			constants += "const string " + line + " = " + l.content + ";\n"
+			uri_tmp = l.uri
+			fnc_line = l.function_line
+		}
+
+		edits[uri_tmp] = append(edits[uri_tmp], lsp.TextEdit{
+			Range: lsp.Range{
+				Start: lsp.Position{
+					Line: uint32(fnc_line-1),
+					Character: 0,
+				},
+				End: lsp.Position{
+					Line: uint32(fnc_line-1),
+					Character: 0,
+				},
+			},
+			NewText: constants,
+		})
+	}
+
+
+
+	var response lsp.ApplyWorkspaceEditResponse
+
+	h.conn.Call(context.Background(),
+		lsp.MethodWorkspaceApplyEdit,
+		lsp.ApplyWorkspaceEditParams{
+			Edit: lsp.WorkspaceEdit{
+				Changes: edits,
+			}}, &response)
+
+	return num;
 }

@@ -9,6 +9,9 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/parser"
+	// lsp "github.com/kirides/DaedalusLanguageServer/protocol"
+
+	// "go.lsp.dev/uri"
 )
 
 // DaedalusTranslatingListener ...
@@ -21,6 +24,9 @@ type DaedalusTranslatingListener struct {
 
 	config translationConfiguration
 	knownSymbols SymbolProvider
+
+	// TODO: delete this after G2A is done
+	logs map[string][]logPos
 }
 
 // DaedalusTranslatingListener ...
@@ -30,6 +36,8 @@ func NewDaedalusTranslatingListener(source string, knownSymbols SymbolProvider, 
 		source:          source,
 		knownSymbols:    knownSymbols,
 		config:          conf,
+
+		logs:            map[string][]logPos{},
 	}
 }
 
@@ -48,36 +56,109 @@ func (l *DaedalusTranslatingListener) EnterFunctionDef(ctx *parser.FunctionDefCo
 
 // EnterFunctionCall ..
 func (l *DaedalusTranslatingListener) EnterFuncCall(ctx *parser.FuncCallContext) {
+	if l.isBlacklistedPath(l.source) {
+		return
+	}
 	name := ctx.NameNode().GetText()
 
 	if strings.EqualFold(name, "b_logentry") {
+		if strings.HasPrefix(strings.ToLower(ctx.AllFuncArgExpression()[1].GetText()), "log_text_") ||
+		   strings.HasPrefix(strings.ToLower(ctx.AllFuncArgExpression()[1].GetText()), "logtext_") {
+			return
+		}
 		l.UnresolvedStrings = append(l.UnresolvedStrings,
 			newUnresolvedSymbol(
 				l.FindFunctionName(ctx) + "." + ctx.AllFuncArgExpression()[0].GetText(),
 				ctx.AllFuncArgExpression()[1].GetText(),
 				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[1].GetText()),
 			))
+		// if strings.HasPrefix(ctx.AllFuncArgExpression()[1].GetText(), "\"") {
+		// 	l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())] = append(l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())],
+		// 		logPos{
+		// 			entryID: ctx.AllFuncArgExpression()[0].GetText(), // + "_" + fmt.Sprint(len(l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())])+1),
+		// 			content: ctx.AllFuncArgExpression()[1].GetText(),
+		// 			uri: uri.File(l.source),
+		// 			line: ctx.GetStart().GetLine()-1,
+		// 			start: ctx.AllFuncArgExpression()[1].GetStart().GetColumn(),
+		// 			end: ctx.AllFuncArgExpression()[1].GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[1].GetText()),
+		// 		},
+		// 	)
+		// }
 	} else if strings.HasPrefix(strings.ToLower(name), "doc_printline")  {
 		cont := ctx.AllFuncArgExpression()[2].GetText()
 
 		// skip empty strings "" and strings with special characters
-		if (len(cont) <= 2 && strings.ContainsRune(cont, '"')) || !HasLetter(cont){
+		if (len(cont) <= 2 && strings.ContainsRune(cont, '"')) || !HasLetter(cont) || strings.Count(cont, " ") == len(cont) {
 			return
 		}
 
+		// l.UnresolvedStrings = append(l.UnresolvedStrings,
+		// 	newUnresolvedSymbol(
+		// 		l.FindFunctionName(ctx),
+		// 		"const string " + l.FindFunctionName(ctx) + " = " + cont,
+		// 		ctx.GetStart().GetLine(),
+		// 		ctx.GetStart().GetColumn(),
+		// 		ctx.GetStart().GetColumn() + utf8.RuneCountInString(cont),
+		// 	))
+
+		// if strings.HasPrefix(cont, "\"") && len(cont) > 2 {
+		// 	l.logs[l.FindFunctionName(ctx)] = append(l.logs[l.FindFunctionName(ctx)],
+		// 		logPos{
+		// 			function_line: l.FindParentFunctionLine(ctx),
+		// 			entryID: l.FindFunctionName(ctx), // + "_" + fmt.Sprint(len(l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())])+1),
+		// 			content: cont,
+		// 			uri: uri.File(l.source),
+		// 			line: ctx.GetStart().GetLine()-1,
+		// 			start: ctx.AllFuncArgExpression()[2].GetStart().GetColumn(),
+		// 			end: ctx.AllFuncArgExpression()[2].GetStart().GetColumn() + utf8.RuneCountInString(cont),
+		// 		},
+		// 	)
+		// }
 		l.UnresolvedStrings = append(l.UnresolvedStrings,
 			newUnresolvedSymbol(
 				l.FindFunctionName(ctx),
 				cont,
 				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetColumn() + utf8.RuneCountInString(cont),
 			))
-	   } else if strings.EqualFold(name, "PrintScreen") {
+    } else if strings.EqualFold(name, "PrintScreen") {
+		if strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "ConcatText") || strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "\"\"") {
+			return
+		}
 		l.UnresolvedStrings = append(l.UnresolvedStrings,
 			newUnresolvedSymbol(
 				l.FindFunctionName(ctx),
 				ctx.AllFuncArgExpression()[0].GetText(),
 				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[0].GetText()),
 			))
+	} else if strings.EqualFold(name, "Print") {
+		if strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "ConcatText") || strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "\"\"") {
+			return
+		}
+		l.UnresolvedStrings = append(l.UnresolvedStrings,
+			newUnresolvedSymbol(
+				l.FindFunctionName(ctx),
+				ctx.AllFuncArgExpression()[0].GetText(),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[0].GetText()),
+			))
+
+	} else if strings.EqualFold(name, "B_BuildLearnString") {
+		l.UnresolvedStrings = append(l.UnresolvedStrings,
+			newUnresolvedSymbol(
+				name,
+				ctx.AllFuncArgExpression()[0].GetText(),
+				ctx.GetStart().GetLine(),
+				ctx.GetStart().GetColumn(),
+				ctx.GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[0].GetText()),
+			))
+
 	}
 }
 
@@ -87,6 +168,15 @@ func (l *DaedalusTranslatingListener) FindFunctionName(root antlr.Tree) string {
 		return funcCall.NameNode().GetText()
 	} else {
 		return l.FindFunctionName(root.GetParent())
+	}
+}
+
+// findf function line
+func (l *DaedalusTranslatingListener) FindParentFunctionLine(root antlr.Tree) int {
+	if funcCall, ok := root.GetParent().(*parser.FunctionDefContext); ok {
+		return funcCall.GetStart().GetLine()
+	} else {
+		return l.FindParentFunctionLine(root.GetParent())
 	}
 }
 
@@ -141,7 +231,6 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	}
 
 	// known instance members
-	// INFO: I check these before the empty string check because of how "dynamically" these fields are handled in translations
 	if ass, ok := ctx.GetParent().GetParent().GetParent().(*parser.AssignmentContext); ok {
 		for _, field := range l.config.MemberVariables {
 			if l.DidFindMemberVarStringLiteral(ass, field) {
@@ -169,20 +258,24 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 	// string literals as a function call parameter
 	if fncCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.FuncCallContext); ok {
 		fncName := fncCtx.NameNode().GetText()
+		// avoid black listed functions
+		if l.isBlacklistedFunc(fncName) {
+			return
+		}
 
 		// // Filter out TA_ and ZS_ functions, I think we can safely assume these will be used in the majority of script bases
 		// // TODO: Add this to a filter also
-		// if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("TA")) {
-		// 	return
-		// } else if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("ZS")) {
-		// 	return
-		// }
+		if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("TA")) {
+			return
+		} else if strings.HasPrefix(strings.ToLower(fncName), strings.ToLower("ZS")) {
+			return
+		}
 		if strings.EqualFold(fncName, "Info_AddChoice") {
 			fnc := fncCtx.AllFuncArgExpression()[0].GetText()
 			dia := fncCtx.AllFuncArgExpression()[2].GetText()
 			var symbolID string
 			if strings.EqualFold(dia, "DIA_SLD_753_Baloro_Exit_Info") { // TODO: hack for G1
-				symbolID = l.FindFunctionName(ctx) + "." + fnc + "." + dia
+				symbolID = fncName /*l.FindFunctionName(ctx)*/ + "." + fnc + "." + dia
 			} else {
 				symbolID = fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
 			}
@@ -195,18 +288,26 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 
 			return
 		}
-		// avoid black listed functions
-		if l.isBlacklistedFunc(fncName) {
-			return
-		}
 
 		// TODO: Somehow build a call stack for all cunftion calls and check, if the string literal ends up "terminating" in an non blacklisted external
+
+
+		// line := ctx.ValueContext.GetStart().GetLine()
+		// symbolID := fncName + ":" + fmt.Sprint(line)
+		// start := ctx.ValueContext.GetStart().GetColumn()
+		// end := start + utf8.RuneCountInString(content)
+		// document := l.source
+
+		// l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end, "FUNC UNHANDLED"))
 	}
 
 	// string constants
 	if constCtx, ok := ctx.GetParent().GetParent().GetParent().GetParent().(*parser.ConstValueDefContext); ok {
 
 		symbolID := constCtx.NameNode().GetText()
+		if l.isBlacklistedSymbol(symbolID) {
+			return
+		}
 		line := ctx.ValueContext.GetStart().GetLine()
 		start := ctx.ValueContext.GetStart().GetColumn()
 		end := start + utf8.RuneCountInString(content)
@@ -260,8 +361,11 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		for i, v := range c.GetChildren() {
 			if s, ok := v.(*parser.ExpressionBlockContext); ok {
 				if s == ctx.GetParent().GetParent() {
-
-					symbolID := c.GetParent().(*parser.ConstArrayDefContext).NameNode().GetText() + "[" + fmt.Sprint(i/2-1) + "]"
+					symName := c.GetParent().(*parser.ConstArrayDefContext).NameNode().GetText()
+					if l.isBlacklistedSymbol(symName) {
+						continue
+					}
+					symbolID := symName + "[" + fmt.Sprint(i/2-1) + "]"
 
 					document := l.source
 					line := ctx.GetStart().GetLine()
@@ -345,13 +449,22 @@ func (l *DaedalusTranslatingListener) isBlacklistedFunc(functionName string) boo
 // Is the path blacklisted?
 func (l *DaedalusTranslatingListener) isBlacklistedPath(pathMask string) bool {
 	for _, mask := range l.config.FileMasks {
-		if strings.Contains(strings.ToLower(mask), strings.ToLower(pathMask)) {
+		if strings.Contains(strings.ToLower(pathMask), strings.ToLower(mask)) {
 			return true
 		}
 	}
 	return false
 }
 
+// Is the symbol blacklisted?
+func (l *DaedalusTranslatingListener) isBlacklistedSymbol(symbolName string) bool {
+	for _, name := range l.config.SymbolBlacklist {
+		if strings.EqualFold(symbolName, name) {
+			return true
+		}
+	}
+	return false
+}
 
 // Return true if the string contains $ in the prefix (SVMs) or
 // if it cointans any of the file extensions
@@ -382,6 +495,9 @@ func isFileterString(s string) bool {
 	} else if strings.HasSuffix(
 		strings.ToLower(s),
 		strings.ToLower(".wav\"")) {
+		return true
+	}
+	if strings.EqualFold(s, "\"n\a\"") {
 		return true
 	}
 	return false

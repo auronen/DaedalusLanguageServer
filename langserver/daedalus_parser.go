@@ -60,6 +60,8 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string, con
 		StringLocations: translating.StringLocations,
 		UnresolvedString: translating.UnresolvedStrings,
 		lastModifiedAt:  time.Now(),
+
+		logs: translating.logs,
 	}
 	return result
 }
@@ -98,6 +100,7 @@ func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt
 		UnresolvedString: translating.UnresolvedStrings,
 		Source:          source,
 		lastModifiedAt:  lastModifiedAt,
+		logs: translating.logs,
 	}
 	return result
 }
