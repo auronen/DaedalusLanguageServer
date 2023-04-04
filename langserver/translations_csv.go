@@ -420,10 +420,14 @@ func (h *LspHandler) generateAllCSV() {
 	var what string
 	var ws_key string
 	for key, val := range h.workspaces {
+		h.logger.Infof("key: %#v,\n\n val %#v\n\n", key, val.wsID)
 		if val.wsID == GOTHIC {
 			what = val.wsID
 			ws_key = key
 		} else if val.wsID == MENU {
+			what = val.wsID
+			ws_key = key
+		} else {
 			what = val.wsID
 			ws_key = key
 		}

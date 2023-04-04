@@ -115,7 +115,8 @@ func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params ls
 	} else if params.Command == CommandTranslateLogs {
 		h.logger.Infof("Generating and substituting logs")
 
-		num := h.substsLogs()
+		// num := h.substsLogs()
+		num := h.substDocs()
 
 		h.logger.Infof("DONE %d strings", num)
 	}

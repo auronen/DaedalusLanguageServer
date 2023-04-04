@@ -1011,6 +1011,7 @@ func (l *CombinedDaedalusListener) ExitMacroBlock(c *parser.MacroBlockContext) {
 	l.right.ExitMacroBlock(c)
 }
 
+/*
 // EnterWhileBlock is called when production macroBlock is exited.
 func (l *CombinedDaedalusListener) EnterWhileBlock(c *parser.WhileBlockContext) {
 	l.left.EnterWhileBlock(c)
@@ -1046,7 +1047,7 @@ func (l *CombinedDaedalusListener) ExitWhileBlockStatement(c *parser.WhileBlockS
 	l.left.ExitWhileBlockStatement(c)
 	l.right.ExitWhileBlockStatement(c)
 }
-
+*/
 // EnterTestBlockStatement is called when production macroBlock is exited.
 func (l *CombinedDaedalusListener) EnterTestBlockStatement(c *parser.TestBlockStatementContext) {
 	l.left.EnterTestBlockStatement(c)

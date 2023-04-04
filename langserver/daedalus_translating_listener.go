@@ -9,8 +9,8 @@ import (
 
 	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/kirides/DaedalusLanguageServer/daedalus/parser"
+	"go.lsp.dev/uri"
 	// lsp "github.com/kirides/DaedalusLanguageServer/protocol"
-
 	// "go.lsp.dev/uri"
 )
 
@@ -103,19 +103,19 @@ func (l *DaedalusTranslatingListener) EnterFuncCall(ctx *parser.FuncCallContext)
 		// 		ctx.GetStart().GetColumn() + utf8.RuneCountInString(cont),
 		// 	))
 
-		// if strings.HasPrefix(cont, "\"") && len(cont) > 2 {
-		// 	l.logs[l.FindFunctionName(ctx)] = append(l.logs[l.FindFunctionName(ctx)],
-		// 		logPos{
-		// 			function_line: l.FindParentFunctionLine(ctx),
-		// 			entryID: l.FindFunctionName(ctx), // + "_" + fmt.Sprint(len(l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())])+1),
-		// 			content: cont,
-		// 			uri: uri.File(l.source),
-		// 			line: ctx.GetStart().GetLine()-1,
-		// 			start: ctx.AllFuncArgExpression()[2].GetStart().GetColumn(),
-		// 			end: ctx.AllFuncArgExpression()[2].GetStart().GetColumn() + utf8.RuneCountInString(cont),
-		// 		},
-		// 	)
-		// }
+		if strings.HasPrefix(cont, "\"") && len(cont) > 2 && HasLetter(cont) {
+			l.logs[l.FindFunctionName(ctx)] = append(l.logs[l.FindFunctionName(ctx)],
+				logPos{
+					function_line: l.FindParentFunctionLine(ctx),
+					entryID: l.FindFunctionName(ctx), // + "_" + fmt.Sprint(len(l.logs[strings.ToUpper(ctx.AllFuncArgExpression()[0].GetText())])+1),
+					content: cont,
+					uri: uri.File(l.source),
+					line: ctx.GetStart().GetLine()-1,
+					start: ctx.AllFuncArgExpression()[2].GetStart().GetColumn(),
+					end: ctx.AllFuncArgExpression()[2].GetStart().GetColumn() + utf8.RuneCountInString(cont),
+				},
+			)
+		}
 		l.UnresolvedStrings = append(l.UnresolvedStrings,
 			newUnresolvedSymbol(
 				l.FindFunctionName(ctx),
@@ -137,9 +137,6 @@ func (l *DaedalusTranslatingListener) EnterFuncCall(ctx *parser.FuncCallContext)
 				ctx.GetStart().GetColumn() + utf8.RuneCountInString(ctx.AllFuncArgExpression()[0].GetText()),
 			))
 	} else if strings.EqualFold(name, "Print") {
-		if strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "ConcatText") || strings.EqualFold(ctx.AllFuncArgExpression()[0].GetText(), "\"\"") {
-			return
-		}
 		l.UnresolvedStrings = append(l.UnresolvedStrings,
 			newUnresolvedSymbol(
 				l.FindFunctionName(ctx),
@@ -275,7 +272,7 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 			dia := fncCtx.AllFuncArgExpression()[2].GetText()
 			var symbolID string
 			if strings.EqualFold(dia, "DIA_SLD_753_Baloro_Exit_Info") { // TODO: hack for G1
-				symbolID = fncName /*l.FindFunctionName(ctx)*/ + "." + fnc + "." + dia
+				symbolID = l.FindFunctionName(ctx) + "." + fnc + "." + dia
 			} else {
 				symbolID = fncCtx.AllFuncArgExpression()[0].GetText() + "." + fncCtx.AllFuncArgExpression()[2].GetText()
 			}
@@ -292,13 +289,13 @@ func (l *DaedalusTranslatingListener) EnterStringLiteralValue(ctx *parser.String
 		// TODO: Somehow build a call stack for all cunftion calls and check, if the string literal ends up "terminating" in an non blacklisted external
 
 
-		// line := ctx.ValueContext.GetStart().GetLine()
-		// symbolID := fncName + ":" + fmt.Sprint(line)
-		// start := ctx.ValueContext.GetStart().GetColumn()
-		// end := start + utf8.RuneCountInString(content)
-		// document := l.source
+		line := ctx.ValueContext.GetStart().GetLine()
+		symbolID := fncName + ":" + fmt.Sprint(line)
+		start := ctx.ValueContext.GetStart().GetColumn()
+		end := start + utf8.RuneCountInString(content)
+		document := l.source
 
-		// l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end, "FUNC UNHANDLED"))
+		l.StringLocations[symbolID] = append(l.StringLocations[symbolID], newSymbolPosition(document, trimQuotes(content), line, start, end, "FUNC UNHANDLED"))
 	}
 
 	// string constants
@@ -496,7 +493,12 @@ func isFileterString(s string) bool {
 		strings.ToLower(s),
 		strings.ToLower(".wav\"")) {
 		return true
+	} else if strings.HasSuffix(
+		strings.ToLower(s),
+		strings.ToLower(".mds\"")) {
+		return true
 	}
+
 	if strings.EqualFold(s, "\"n\a\"") {
 		return true
 	}
