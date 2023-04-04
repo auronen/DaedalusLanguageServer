@@ -47,11 +47,13 @@ func (p *lexerPool) Get() *parser.DaedalusLexer  { return p.inner.Get().(*parser
 func (p *lexerPool) Put(v *parser.DaedalusLexer) { p.inner.Put(v) }
 
 // ParseAndValidateScript ...
-func (m *parseResultsManager) ParseAndValidateScript(source, content string) *ParseResult {
+func (m *parseResultsManager) ParseAndValidateScript(source, content string, conf translationConfiguration) *ParseResult {
 	stateful := NewDaedalusStatefulListener(source, m)
 	validating := NewDaedalusValidatingListener(source, m)
+
+	translating := NewDaedalusTranslatingListener(source, m, conf)
 	errListener := &SyntaxErrorListener{}
-	m.ParseScriptListener(source, content, combineListeners(stateful, validating), errListener)
+	m.ParseScriptListener(source, content, combineListeners(combineListeners(stateful, validating), translating), errListener)
 
 	result := &ParseResult{
 		SyntaxErrors:    errListener.SyntaxErrors,
@@ -63,10 +65,15 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string) *Pa
 		Instances:       stateful.Globals.Instances,
 		Namespaces:      stateful.Namespaces,
 		Source:          source,
+		StringLocations: translating.StringLocations,
+		UnresolvedString: translating.UnresolvedStrings,
 		lastModifiedAt:  time.Now(),
+
+		logs: translating.logs,
 	}
 	return result
 }
+
 
 // ParseScriptListener ...
 func (m *parseResultsManager) ParseScriptListener(source, content string, listener parser.DaedalusListener, errListener antlr.ErrorListener) parser.IDaedalusFileContext {
@@ -74,18 +81,26 @@ func (m *parseResultsManager) ParseScriptListener(source, content string, listen
 }
 
 // ParseScript ...
+
 func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt time.Time) *ParseResult {
 	m.mtx.RLock()
 	if existing, ok := m.parseResults[source]; ok && existing.lastModifiedAt.Equal(lastModifiedAt) {
-		m.mtx.RUnlock()
+		m.mtx.RUnlock()=======
+func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt time.Time, ws *LspWorkspace) *ParseResult {
+	m.mtx.Lock()
+	if existing, ok := m.parseResults[source]; ok && existing.lastModifiedAt == lastModifiedAt {
+		m.mtx.Unlock()
+
 		return existing
 	}
 	m.mtx.RUnlock()
 
 	listener := NewDaedalusStatefulListener(source, m)
+	translating := NewDaedalusTranslatingListener(source, m, initTranslationConfig(ws))
 	errListener := &SyntaxErrorListener{}
 
 	daedalusFile := m.ParseScriptListener(source, content, listener, errListener)
+
 
 	result := &ParseResult{
 		Ast:             daedalusFile,
@@ -97,8 +112,11 @@ func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt
 		Prototypes:      listener.Globals.Prototypes,
 		Instances:       listener.Globals.Instances,
 		Namespaces:      listener.Namespaces,
+		StringLocations: translating.StringLocations,
+		UnresolvedString: translating.UnresolvedStrings,
 		Source:          source,
 		lastModifiedAt:  lastModifiedAt,
+		logs: translating.logs,
 	}
 	return result
 }

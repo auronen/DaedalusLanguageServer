@@ -20,6 +20,7 @@ import (
 	lsp "github.com/kirides/DaedalusLanguageServer/protocol"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/encoding/unicode"
 )
 
 type parseResultsManager struct {
@@ -57,6 +58,7 @@ var encodings = map[string]encoding.Encoding{
 	"WINDOWS-1256": charmap.Windows1256,
 	"WINDOWS-1257": charmap.Windows1257,
 	"WINDOWS-1258": charmap.Windows1258,
+	"UTF8"        : unicode.UTF8,
 }
 
 func (m *parseResultsManager) SetFileEncoding(enc string) error {
@@ -284,8 +286,8 @@ func (m *parseResultsManager) GetCtx(ctx context.Context, documentURI string) (*
 	}
 }
 
-func (m *parseResultsManager) Update(documentURI, content string) (*ParseResult, error) {
-	r := m.ParseAndValidateScript(documentURI, content)
+func (m *parseResultsManager) Update(documentURI, content string, ws *LspWorkspace) (*ParseResult, error) {
+	r := m.ParseAndValidateScript(documentURI, content, initTranslationConfig(ws))
 
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
@@ -410,7 +412,7 @@ func timeOp(op string, logger dls.Logger) func() {
 	}
 }
 
-func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) ([]*ParseResult, error) {
+func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string, ws *LspWorkspace) ([]*ParseResult, error) {
 	resolvedPaths, err := m.resolveSrcPaths(srcFile, filepath.Dir(srcFile))
 	if err != nil {
 		return nil, err
@@ -462,7 +464,7 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string) (
 					continue
 				}
 
-				parsed := m.ParseScript(r, buf.String(), lastMod)
+				parsed := m.ParseScript(r, buf.String(), lastMod, ws)
 
 				m.mtx.Lock()
 				m.parseResults[parsed.Source] = parsed
@@ -531,6 +533,7 @@ func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 		return nil, err
 	}
 
+
 	parsed := m.ParseScript(dFile, buf.String(), stat.ModTime())
 	// For now, Ast = nil means we already analyzed the file.
 	// keeping the Ast in memory uses a whole bunch of memory.
@@ -539,6 +542,7 @@ func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 		parsed.Ast = nil
 		parsed.SyntaxErrors = errors
 	}
+
 
 	m.mtx.Lock()
 	m.parseResults[parsed.Source] = parsed

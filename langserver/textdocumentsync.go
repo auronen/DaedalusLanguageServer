@@ -27,7 +27,7 @@ func lspSeverityFromSeverity(severity ErrorSeverity) lsp.DiagnosticSeverity {
 func (h *textDocumentSync) updateBuffer(ctx context.Context, ws *LspWorkspace, filePath, content string) {
 	chars := content
 	ws.bufferManager.UpdateBuffer(filePath, chars)
-	p, _ := ws.parsedDocuments.Update(filePath, content)
+	p, _ := ws.parsedDocuments.Update(filePath, content, ws)
 
 	diagnostics := []lsp.Diagnostic{}
 	if p.SyntaxErrors != nil && len(p.SyntaxErrors) > 0 {

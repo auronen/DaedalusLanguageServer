@@ -79,6 +79,11 @@ func (l *DaedalusValidatingListener) EnterFuncCall(ctx *parser.FuncCallContext) 
 		return
 	}
 
+	// TODO: skip this variadic function for now
+	if strings.EqualFold(funcName, "str_format") {
+		return
+	}
+
 	if len(ctx.AllFuncArgExpression()) < len(sym.(symbol.Function).Parameters) {
 		l.report(ctx.GetParser(), ctx, nameNode.GetStop(), D0004NotEnoughArgumentsSpecified)
 	} else if len(ctx.AllFuncArgExpression()) > len(sym.(symbol.Function).Parameters) {

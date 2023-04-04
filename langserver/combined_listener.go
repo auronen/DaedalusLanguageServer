@@ -939,4 +939,161 @@ func (l *CombinedDaedalusListener) ExitVarValueDecl(c *parser.VarValueDeclContex
 	l.right.ExitVarValueDecl(c)
 }
 
+// EnterMacroCondition is called when production macroCondition is entered.
+func (l *CombinedDaedalusListener) EnterMacroCondition(c *parser.MacroConditionContext) {
+	l.left.EnterMacroCondition(c)
+	l.right.EnterMacroCondition(c)
+}
+
+// ExitMacroCondition is called when production macroCondition is exited.
+func (l *CombinedDaedalusListener) ExitMacroCondition(c *parser.MacroConditionContext) {
+	l.left.ExitMacroCondition(c)
+	l.right.ExitMacroCondition(c)
+}
+
+// EnterMacroElseBlock is called when production macroElseBlock is entered.
+func (l *CombinedDaedalusListener) EnterMacroElseBlock(c *parser.MacroElseBlockContext) {
+	l.left.EnterMacroElseBlock(c)
+	l.right.EnterMacroElseBlock(c)
+}
+
+// ExitMacroElseBlock is called when production macroElseBlock is exited.
+func (l *CombinedDaedalusListener) ExitMacroElseBlock(c *parser.MacroElseBlockContext) {
+	l.left.ExitMacroElseBlock(c)
+	l.right.ExitMacroElseBlock(c)
+}
+
+// EnterMacroElseIfBlock is called when production macroElseIfBlock is entered.
+func (l *CombinedDaedalusListener) EnterMacroElseIfBlock(c *parser.MacroElseIfBlockContext) {
+	l.left.EnterMacroElseIfBlock(c)
+	l.right.EnterMacroElseIfBlock(c)
+}
+
+// ExitMacroElseIfBlock is called when production macroElseIfBlock is exited.
+func (l *CombinedDaedalusListener) ExitMacroElseIfBlock(c *parser.MacroElseIfBlockContext) {
+	l.left.ExitMacroElseIfBlock(c)
+	l.right.ExitMacroElseIfBlock(c)
+}
+
+// EnterMacroIfBlock is called when production macroIfBlock is entered.
+func (l *CombinedDaedalusListener) EnterMacroIfBlock(c *parser.MacroIfBlockContext) {
+	l.left.EnterMacroIfBlock(c)
+	l.right.EnterMacroIfBlock(c)
+}
+
+// ExitMacroIfBlock is called when production macroIfBlock is exited.
+func (l *CombinedDaedalusListener) ExitMacroIfBlock(c *parser.MacroIfBlockContext) {
+	l.left.ExitMacroIfBlock(c)
+	l.right.ExitMacroIfBlock(c)
+}
+
+// EnterMacroDef is called when production macroDef is entered.
+func (l *CombinedDaedalusListener) EnterMacroDef(c *parser.MacroDefContext) {
+	l.left.EnterMacroDef(c)
+	l.right.EnterMacroDef(c)
+}
+
+// ExitMacroDef is called when production macroDef is exited.
+func (l *CombinedDaedalusListener) ExitMacroDef(c *parser.MacroDefContext) {
+	l.left.ExitMacroDef(c)
+	l.right.ExitMacroDef(c)
+}
+
+// EnterMacroBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterMacroBlock(c *parser.MacroBlockContext) {
+	l.left.EnterMacroBlock(c)
+	l.right.EnterMacroBlock(c)
+}
+
+// ExitMacroBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitMacroBlock(c *parser.MacroBlockContext) {
+	l.left.ExitMacroBlock(c)
+	l.right.ExitMacroBlock(c)
+}
+
+/*
+// EnterWhileBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileBlock(c *parser.WhileBlockContext) {
+	l.left.EnterWhileBlock(c)
+	l.right.EnterWhileBlock(c)
+}
+
+// ExitWhileBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileBlock(c *parser.WhileBlockContext) {
+	l.left.ExitWhileBlock(c)
+	l.right.ExitWhileBlock(c)
+}
+
+// EnterWhileCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileCondition(c *parser.WhileConditionContext) {
+	l.left.EnterWhileCondition(c)
+	l.right.EnterWhileCondition(c)
+}
+
+// ExitWhileCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileCondition(c *parser.WhileConditionContext) {
+	l.left.ExitWhileCondition(c)
+	l.right.ExitWhileCondition(c)
+}
+
+// EnterWhileBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterWhileBlockStatement(c *parser.WhileBlockStatementContext) {
+	l.left.EnterWhileBlockStatement(c)
+	l.right.EnterWhileBlockStatement(c)
+}
+
+// ExitWhileBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitWhileBlockStatement(c *parser.WhileBlockStatementContext) {
+	l.left.ExitWhileBlockStatement(c)
+	l.right.ExitWhileBlockStatement(c)
+}
+*/
+// EnterTestBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestBlockStatement(c *parser.TestBlockStatementContext) {
+	l.left.EnterTestBlockStatement(c)
+	l.right.EnterTestBlockStatement(c)
+}
+
+// ExitTestBlockStatement is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestBlockStatement(c *parser.TestBlockStatementContext) {
+	l.left.ExitTestBlockStatement(c)
+	l.right.ExitTestBlockStatement(c)
+}
+
+// EnterTestBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestBlock(c *parser.TestBlockContext) {
+	l.left.EnterTestBlock(c)
+	l.right.EnterTestBlock(c)
+}
+
+// ExitTestBlock is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestBlock(c *parser.TestBlockContext) {
+	l.left.ExitTestBlock(c)
+	l.right.ExitTestBlock(c)
+}
+
+// EnterTestCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterTestCondition(c *parser.TestConditionContext) {
+	l.left.EnterTestCondition(c)
+	l.right.EnterTestCondition(c)
+}
+
+// ExitTestCondition is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitTestCondition(c *parser.TestConditionContext) {
+	l.left.ExitTestCondition(c)
+	l.right.ExitTestCondition(c)
+}
+
+// EnterVariadic is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) EnterVariadic(c *parser.VariadicContext) {
+	l.left.EnterVariadic(c)
+	l.right.EnterVariadic(c)
+}
+
+// ExitVariadic is called when production macroBlock is exited.
+func (l *CombinedDaedalusListener) ExitVariadic(c *parser.VariadicContext) {
+	l.left.ExitVariadic(c)
+	l.right.ExitVariadic(c)
+}
+
 var _ parser.DaedalusListener = (*CombinedDaedalusListener)(nil)

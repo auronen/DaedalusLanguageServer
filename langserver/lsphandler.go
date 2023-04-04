@@ -85,32 +85,28 @@ func (h *LspHandler) OnConfigChanged(handler func(config LspConfig)) {
 	h.onConfigChangedHandlers = append(h.onConfigChangedHandlers, handler)
 }
 
-func (h *LspHandler) handleWorkspaceExecuteCommand(req dls.RpcContext, params lsp.ExecuteCommandParams) error {
-	return req.Reply(req.Context(), nil, nil)
-}
-
 func (h *LspHandler) onInitialized() {
-	h.handlers.Register(lsp.MethodTextDocumentCompletion, dls.MakeHandler(h.handleTextDocumentCompletion))
-	h.handlers.Register(lsp.MethodTextDocumentDefinition, dls.MakeHandler(h.handleTextDocumentDefinition))
-	h.handlers.Register(lsp.MethodTextDocumentHover, dls.MakeHandler(h.handleTextDocumentHover))
-	h.handlers.Register(lsp.MethodTextDocumentSignatureHelp, dls.MakeHandler(h.handleTextDocumentSignatureHelp))
-	h.handlers.Register(lsp.MethodTextDocumentImplementation, dls.MakeHandler(h.handleTextDocumentImplementation))
-	h.handlers.Register(lsp.MethodSemanticTokensFull, dls.MakeHandler(h.handleSemanticTokensFull))
-	h.handlers.Register(lsp.MethodSemanticTokensRange, dls.MakeHandler(h.handleSemanticTokensRange))
-	h.handlers.Register(lsp.MethodTextDocumentInlayHint, dls.MakeHandler(h.handleInlayHints))
+	h.handlers.Register(lsp.MethodTextDocumentCompletion,		dls.MakeHandler(h.handleTextDocumentCompletion))
+	h.handlers.Register(lsp.MethodTextDocumentDefinition,		dls.MakeHandler(h.handleTextDocumentDefinition))
+	h.handlers.Register(lsp.MethodTextDocumentHover,			dls.MakeHandler(h.handleTextDocumentHover))
+	h.handlers.Register(lsp.MethodTextDocumentSignatureHelp,	dls.MakeHandler(h.handleTextDocumentSignatureHelp))
+	h.handlers.Register(lsp.MethodTextDocumentImplementation,	dls.MakeHandler(h.handleTextDocumentImplementation))
+	h.handlers.Register(lsp.MethodSemanticTokensFull,			dls.MakeHandler(h.handleSemanticTokensFull))
+	h.handlers.Register(lsp.MethodSemanticTokensRange,			dls.MakeHandler(h.handleSemanticTokensRange))
+	h.handlers.Register(lsp.MethodTextDocumentInlayHint,		dls.MakeHandler(h.handleInlayHints))
 
-	h.handlers.Register(lsp.MethodTextDocumentDidOpen, dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidOpen))
-	h.handlers.Register(lsp.MethodTextDocumentDidChange, dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidChange))
-	h.handlers.Register(lsp.MethodTextDocumentDidSave, dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidSave))
-	h.handlers.Register(lsp.MethodTextDocumentDidClose, dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidClose))
+	h.handlers.Register(lsp.MethodTextDocumentDidOpen,			dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidOpen))
+	h.handlers.Register(lsp.MethodTextDocumentDidChange,		dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidChange))
+	h.handlers.Register(lsp.MethodTextDocumentDidSave,			dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidSave))
+	h.handlers.Register(lsp.MethodTextDocumentDidClose,			dls.MakeHandler(h.TextDocumentSync.handleTextDocumentDidClose))
 
-	h.handlers.Register(lsp.MethodTextDocumentDocumentSymbol, dls.MakeHandler(h.handleDocumentSymbol))
-	h.handlers.Register(lsp.MethodWorkspaceSymbol, dls.MakeHandler(h.handleWorkspaceSymbol))
+	h.handlers.Register(lsp.MethodTextDocumentDocumentSymbol,	dls.MakeHandler(h.handleDocumentSymbol))
+	h.handlers.Register(lsp.MethodWorkspaceSymbol,				dls.MakeHandler(h.handleWorkspaceSymbol))
 
-	h.handlers.Register(lsp.MethodTextDocumentCodeLens, dls.MakeHandler(h.handleTextDocumentCodeLens))
-	h.handlers.Register(lsp.MethodCodeLensResolve, dls.MakeHandler(h.handleCodeLensResolve))
-	h.handlers.Register(lsp.MethodTextDocumentReferences, dls.MakeHandler(h.handleTextDocumentReferences))
-	h.handlers.Register(lsp.MethodWorkspaceExecuteCommand, dls.MakeHandler(h.handleWorkspaceExecuteCommand))
+	h.handlers.Register(lsp.MethodTextDocumentCodeLens,			dls.MakeHandler(h.handleTextDocumentCodeLens))
+	h.handlers.Register(lsp.MethodCodeLensResolve,				dls.MakeHandler(h.handleCodeLensResolve))
+	h.handlers.Register(lsp.MethodTextDocumentReferences,		dls.MakeHandler(h.handleTextDocumentReferences))
+	h.handlers.Register(lsp.MethodWorkspaceExecuteCommand,		dls.MakeHandler(h.handleWorkspaceExecuteCommand))
 }
 
 func prettyJSON(val interface{}) string {
@@ -149,13 +145,14 @@ func (h *LspHandler) initializeWorkspaces(ctx context.Context, workspaceURIs ...
 		}
 		h.logger.Infof("Setting up workspace %q", p)
 		ws := &LspWorkspace{
-			bufferManager:   NewBufferManager(),
-			parsedDocuments: newParseResultsManager(h.logger),
-			config:          h.config,
-			logger:          h.logger,
-			conn:            h.conn,
-			path:            p,
-			uri:             lsp.DocumentURI(v),
+			bufferManager:     NewBufferManager(),
+			parsedDocuments:   newParseResultsManager(h.logger),
+			config:            h.config,
+			logger:            h.logger,
+			conn:              h.conn,
+			path:              p,
+			translationConfig: initTranslationConfigWithPath(p),
+			uri:               lsp.DocumentURI(v),
 		}
 		ws.workspaceCtx, ws.cancelWorkspaceCtx = context.WithCancel(context.Background())
 		h.workspaces[p] = ws
@@ -233,7 +230,14 @@ func (h *LspHandler) Handle(ctx context.Context, reply jsonrpc2.Replier, r jsonr
 			},
 			Capabilities: lsp.ServerCapabilities{
 				ExecuteCommandProvider: lsp.ExecuteCommandOptions{
-					Commands: []string{CommandSetupWorkspace},
+					Commands: []string{
+						CommandSetupWorkspace,
+						CommandTranslateAll,
+						CommandTranslateAutorun,
+						CommandTranslateSubstitute,
+						CommandTranslateUnresolved,
+						CommandTranslateLogs,
+					},
 				},
 				CompletionProvider: lsp.CompletionOptions{
 					TriggerCharacters: []string{"."},

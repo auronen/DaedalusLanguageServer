@@ -17,6 +17,33 @@ type DaedalusListener interface {
 	// EnterInlineDef is called when entering the inlineDef production.
 	EnterInlineDef(c *InlineDefContext)
 
+	// EnterMacroBlock is called when entering the macroBlock production.
+	EnterMacroBlock(c *MacroBlockContext)
+
+	// EnterMacroCondition is called when entering the macroCondition production.
+	EnterMacroCondition(c *MacroConditionContext)
+
+	// EnterMacroElseBlock is called when entering the macroElseBlock production.
+	EnterMacroElseBlock(c *MacroElseBlockContext)
+
+	// EnterMacroElseIfBlock is called when entering the macroElseIfBlock production.
+	EnterMacroElseIfBlock(c *MacroElseIfBlockContext)
+
+	// EnterMacroIfBlock is called when entering the macroIfBlock production.
+	EnterMacroIfBlock(c *MacroIfBlockContext)
+
+	// EnterMacroDef is called when entering the macroDef production.
+	EnterMacroDef(c *MacroDefContext)
+
+	// EnterTestCondition is called when entering the testCondition production.
+	EnterTestCondition(c *TestConditionContext)
+
+	// EnterTestBlock is called when entering the testBlock production.
+	EnterTestBlock(c *TestBlockContext)
+
+	// EnterTestBlockStatement is called when entering the testBlockStatement production.
+	EnterTestBlockStatement(c *TestBlockStatementContext)
+
 	// EnterFunctionDef is called when entering the functionDef production.
 	EnterFunctionDef(c *FunctionDefContext)
 
@@ -73,6 +100,9 @@ type DaedalusListener interface {
 
 	// EnterVarValueDecl is called when entering the varValueDecl production.
 	EnterVarValueDecl(c *VarValueDeclContext)
+
+	// EnterVariadic is called when entering the variadic production.
+	EnterVariadic(c *VariadicContext)
 
 	// EnterParameterList is called when entering the parameterList production.
 	EnterParameterList(c *ParameterListContext)
@@ -236,6 +266,33 @@ type DaedalusListener interface {
 	// ExitInlineDef is called when exiting the inlineDef production.
 	ExitInlineDef(c *InlineDefContext)
 
+	// ExitMacroBlock is called when exiting the macroBlock production.
+	ExitMacroBlock(c *MacroBlockContext)
+
+	// ExitMacroCondition is called when exiting the macroCondition production.
+	ExitMacroCondition(c *MacroConditionContext)
+
+	// ExitMacroElseBlock is called when exiting the macroElseBlock production.
+	ExitMacroElseBlock(c *MacroElseBlockContext)
+
+	// ExitMacroElseIfBlock is called when exiting the macroElseIfBlock production.
+	ExitMacroElseIfBlock(c *MacroElseIfBlockContext)
+
+	// ExitMacroIfBlock is called when exiting the macroIfBlock production.
+	ExitMacroIfBlock(c *MacroIfBlockContext)
+
+	// ExitMacroDef is called when exiting the macroDef production.
+	ExitMacroDef(c *MacroDefContext)
+
+	// ExitTestCondition is called when exiting the testCondition production.
+	ExitTestCondition(c *TestConditionContext)
+
+	// ExitTestBlock is called when exiting the testBlock production.
+	ExitTestBlock(c *TestBlockContext)
+
+	// ExitTestBlockStatement is called when exiting the testBlockStatement production.
+	ExitTestBlockStatement(c *TestBlockStatementContext)
+
 	// ExitFunctionDef is called when exiting the functionDef production.
 	ExitFunctionDef(c *FunctionDefContext)
 
@@ -292,6 +349,9 @@ type DaedalusListener interface {
 
 	// ExitVarValueDecl is called when exiting the varValueDecl production.
 	ExitVarValueDecl(c *VarValueDeclContext)
+
+	// ExitVariadic is called when exiting the variadic production.
+	ExitVariadic(c *VariadicContext)
 
 	// ExitParameterList is called when exiting the parameterList production.
 	ExitParameterList(c *ParameterListContext)

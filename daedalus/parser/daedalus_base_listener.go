@@ -39,6 +39,60 @@ func (s *BaseDaedalusListener) EnterInlineDef(ctx *InlineDefContext) {}
 // ExitInlineDef is called when production inlineDef is exited.
 func (s *BaseDaedalusListener) ExitInlineDef(ctx *InlineDefContext) {}
 
+// EnterMacroBlock is called when production macroBlock is entered.
+func (s *BaseDaedalusListener) EnterMacroBlock(ctx *MacroBlockContext) {}
+
+// ExitMacroBlock is called when production macroBlock is exited.
+func (s *BaseDaedalusListener) ExitMacroBlock(ctx *MacroBlockContext) {}
+
+// EnterMacroCondition is called when production macroCondition is entered.
+func (s *BaseDaedalusListener) EnterMacroCondition(ctx *MacroConditionContext) {}
+
+// ExitMacroCondition is called when production macroCondition is exited.
+func (s *BaseDaedalusListener) ExitMacroCondition(ctx *MacroConditionContext) {}
+
+// EnterMacroElseBlock is called when production macroElseBlock is entered.
+func (s *BaseDaedalusListener) EnterMacroElseBlock(ctx *MacroElseBlockContext) {}
+
+// ExitMacroElseBlock is called when production macroElseBlock is exited.
+func (s *BaseDaedalusListener) ExitMacroElseBlock(ctx *MacroElseBlockContext) {}
+
+// EnterMacroElseIfBlock is called when production macroElseIfBlock is entered.
+func (s *BaseDaedalusListener) EnterMacroElseIfBlock(ctx *MacroElseIfBlockContext) {}
+
+// ExitMacroElseIfBlock is called when production macroElseIfBlock is exited.
+func (s *BaseDaedalusListener) ExitMacroElseIfBlock(ctx *MacroElseIfBlockContext) {}
+
+// EnterMacroIfBlock is called when production macroIfBlock is entered.
+func (s *BaseDaedalusListener) EnterMacroIfBlock(ctx *MacroIfBlockContext) {}
+
+// ExitMacroIfBlock is called when production macroIfBlock is exited.
+func (s *BaseDaedalusListener) ExitMacroIfBlock(ctx *MacroIfBlockContext) {}
+
+// EnterMacroDef is called when production macroDef is entered.
+func (s *BaseDaedalusListener) EnterMacroDef(ctx *MacroDefContext) {}
+
+// ExitMacroDef is called when production macroDef is exited.
+func (s *BaseDaedalusListener) ExitMacroDef(ctx *MacroDefContext) {}
+
+// EnterTestCondition is called when production testCondition is entered.
+func (s *BaseDaedalusListener) EnterTestCondition(ctx *TestConditionContext) {}
+
+// ExitTestCondition is called when production testCondition is exited.
+func (s *BaseDaedalusListener) ExitTestCondition(ctx *TestConditionContext) {}
+
+// EnterTestBlock is called when production testBlock is entered.
+func (s *BaseDaedalusListener) EnterTestBlock(ctx *TestBlockContext) {}
+
+// ExitTestBlock is called when production testBlock is exited.
+func (s *BaseDaedalusListener) ExitTestBlock(ctx *TestBlockContext) {}
+
+// EnterTestBlockStatement is called when production testBlockStatement is entered.
+func (s *BaseDaedalusListener) EnterTestBlockStatement(ctx *TestBlockStatementContext) {}
+
+// ExitTestBlockStatement is called when production testBlockStatement is exited.
+func (s *BaseDaedalusListener) ExitTestBlockStatement(ctx *TestBlockStatementContext) {}
+
 // EnterFunctionDef is called when production functionDef is entered.
 func (s *BaseDaedalusListener) EnterFunctionDef(ctx *FunctionDefContext) {}
 
@@ -152,6 +206,12 @@ func (s *BaseDaedalusListener) EnterVarValueDecl(ctx *VarValueDeclContext) {}
 
 // ExitVarValueDecl is called when production varValueDecl is exited.
 func (s *BaseDaedalusListener) ExitVarValueDecl(ctx *VarValueDeclContext) {}
+
+// EnterVariadic is called when production variadic is entered.
+func (s *BaseDaedalusListener) EnterVariadic(ctx *VariadicContext) {}
+
+// ExitVariadic is called when production variadic is exited.
+func (s *BaseDaedalusListener) ExitVariadic(ctx *VariadicContext) {}
 
 // EnterParameterList is called when production parameterList is entered.
 func (s *BaseDaedalusListener) EnterParameterList(ctx *ParameterListContext) {}

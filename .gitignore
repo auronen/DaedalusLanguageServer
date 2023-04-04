@@ -13,3 +13,5 @@ protocol/gen/*.js.*
 protocol/gen/package*.json
 protocol/gen/tmp/*
 !protocol/gen/tmp/.gitkeep
+antlr_parser/compile-parser-go.sh
+.dir-locals.el
