@@ -70,9 +70,10 @@ func (l *DaedalusValidatingListener) lookupSymbol(name string, symbol SymbolType
 
 // EnterFuncCall ...
 func (l *DaedalusValidatingListener) EnterFuncCall(ctx *parser.FuncCallContext) {
-	funcName := ctx.NameNode().GetText()
+	nameNode := ctx.NameNode()
+	funcName := nameNode.GetText()
 	funcName = strings.ToUpper(funcName)
-	sym := l.lookupSymbol(strings.ToUpper(funcName), SymbolFunction)
+	sym := l.lookupSymbol(funcName, SymbolFunction)
 
 	if sym == nil {
 		return
@@ -84,9 +85,9 @@ func (l *DaedalusValidatingListener) EnterFuncCall(ctx *parser.FuncCallContext) 
 	}
 
 	if len(ctx.AllFuncArgExpression()) < len(sym.(symbol.Function).Parameters) {
-		l.report(ctx.GetParser(), ctx, ctx.NameNode().GetStop(), D0004NotEnoughArgumentsSpecified)
+		l.report(ctx.GetParser(), ctx, nameNode.GetStop(), D0004NotEnoughArgumentsSpecified)
 	} else if len(ctx.AllFuncArgExpression()) > len(sym.(symbol.Function).Parameters) {
-		l.report(ctx.GetParser(), ctx, ctx.NameNode().GetStop(), D0005TooManyArgumentsSpecified)
+		l.report(ctx.GetParser(), ctx, nameNode.GetStop(), D0005TooManyArgumentsSpecified)
 	}
 }
 
@@ -105,10 +106,11 @@ var metaFields = map[string][]string{
 
 // EnterZParserExtenderMeta implements parser.DaedalusListener
 func (l *DaedalusValidatingListener) EnterZParserExtenderMeta(ctx *parser.ZParserExtenderMetaContext) {
-	if ctx.NameNode() == nil || ctx.MetaValue() == nil {
+	nameNode := ctx.NameNode()
+	if nameNode == nil || ctx.MetaValue() == nil {
 		return
 	}
-	key := strings.ToUpper(ctx.NameNode().GetText())
+	key := strings.ToUpper(nameNode.GetText())
 	if values, ok := metaFields[key]; ok {
 		// nil means there are no checks
 		if values == nil {
@@ -136,6 +138,6 @@ func (l *DaedalusValidatingListener) EnterZParserExtenderMeta(ctx *parser.ZParse
 			}
 		}
 	} else {
-		l.report(ctx.GetParser(), ctx.NameNode(), ctx.NameNode().GetStart(), D0006UnrecognizedMetaField)
+		l.report(ctx.GetParser(), nameNode, nameNode.GetStart(), D0006UnrecognizedMetaField)
 	}
 }

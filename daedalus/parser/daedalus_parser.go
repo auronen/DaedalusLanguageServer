@@ -1,4 +1,4 @@
-// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
+// Code generated from Daedalus.g4 by ANTLR 4.12.0. DO NOT EDIT.
 
 package parser // Daedalus
 
@@ -359,7 +359,7 @@ func NewDaedalusParser(input antlr.TokenStream) *DaedalusParser {
 	this.RuleNames = staticData.ruleNames
 	this.LiteralNames = staticData.literalNames
 	this.SymbolicNames = staticData.symbolicNames
-	this.GrammarFileName = "java-escape"
+	this.GrammarFileName = "Daedalus.g4"
 
 	return this
 }
@@ -515,6 +515,10 @@ type IDaedalusFileContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	EOF() antlr.TerminalNode
+	MainBlock() IMainBlockContext
+
 	// IsDaedalusFileContext differentiates from other interfaces.
 	IsDaedalusFileContext()
 }
@@ -636,6 +640,14 @@ type IBlockDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Semi() antlr.TerminalNode
+	FunctionDef() IFunctionDefContext
+	ClassDef() IClassDefContext
+	PrototypeDef() IPrototypeDefContext
+	InstanceDef() IInstanceDefContext
+	NamespaceDef() INamespaceDefContext
 
 	// IsBlockDefContext differentiates from other interfaces.
 	IsBlockDefContext()
@@ -848,6 +860,12 @@ type IInlineDefContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Semi() antlr.TerminalNode
+	ConstDef() IConstDefContext
+	VarDecl() IVarDeclContext
+	InstanceDecl() IInstanceDeclContext
+
 	// IsInlineDefContext differentiates from other interfaces.
 	IsInlineDefContext()
 }
@@ -1015,6 +1033,12 @@ type IMacroBlockContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	BlockDef() IBlockDefContext
+	Statement() IStatementContext
+	Semi() antlr.TerminalNode
+	IfBlockStatement() IIfBlockStatementContext
+
 	// IsMacroBlockContext differentiates from other interfaces.
 	IsMacroBlockContext()
 }
@@ -1145,7 +1169,7 @@ func (p *DaedalusParser) MacroBlock() (localctx IMacroBlockContext) {
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(163)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 4, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 4, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(155)
@@ -1190,6 +1214,9 @@ type IMacroConditionContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	ExpressionBlock() IExpressionBlockContext
 
 	// IsMacroConditionContext differentiates from other interfaces.
 	IsMacroConditionContext()
@@ -1296,6 +1323,11 @@ type IMacroElseBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Melse() antlr.TerminalNode
+	AllMacroBlock() []IMacroBlockContext
+	MacroBlock(i int) IMacroBlockContext
 
 	// IsMacroElseBlockContext differentiates from other interfaces.
 	IsMacroElseBlockContext()
@@ -1446,6 +1478,12 @@ type IMacroElseIfBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Melif() antlr.TerminalNode
+	MacroCondition() IMacroConditionContext
+	AllMacroBlock() []IMacroBlockContext
+	MacroBlock(i int) IMacroBlockContext
 
 	// IsMacroElseIfBlockContext differentiates from other interfaces.
 	IsMacroElseIfBlockContext()
@@ -1617,6 +1655,12 @@ type IMacroIfBlockContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Mif() antlr.TerminalNode
+	MacroCondition() IMacroConditionContext
+	AllMacroBlock() []IMacroBlockContext
+	MacroBlock(i int) IMacroBlockContext
+
 	// IsMacroIfBlockContext differentiates from other interfaces.
 	IsMacroIfBlockContext()
 }
@@ -1787,6 +1831,13 @@ type IMacroDefContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	MacroIfBlock() IMacroIfBlockContext
+	Mendif() antlr.TerminalNode
+	AllMacroElseIfBlock() []IMacroElseIfBlockContext
+	MacroElseIfBlock(i int) IMacroElseIfBlockContext
+	MacroElseBlock() IMacroElseBlockContext
+
 	// IsMacroDefContext differentiates from other interfaces.
 	IsMacroDefContext()
 }
@@ -1948,7 +1999,7 @@ func (p *DaedalusParser) MacroDef() (localctx IMacroDefContext) {
 	}
 	p.SetState(194)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 8, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 8, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -1960,7 +2011,7 @@ func (p *DaedalusParser) MacroDef() (localctx IMacroDefContext) {
 		}
 		p.SetState(196)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 8, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 8, p.GetParserRuleContext())
 	}
 	p.SetState(198)
 	p.GetErrorHandler().Sync(p)
@@ -1987,6 +2038,9 @@ type ITestConditionContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	ExpressionBlock() IExpressionBlockContext
 
 	// IsTestConditionContext differentiates from other interfaces.
 	IsTestConditionContext()
@@ -2093,6 +2147,11 @@ type ITestBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Test() antlr.TerminalNode
+	TestCondition() ITestConditionContext
+	StatementBlock() IStatementBlockContext
 
 	// IsTestBlockContext differentiates from other interfaces.
 	IsTestBlockContext()
@@ -2227,6 +2286,12 @@ type ITestBlockStatementContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	TestBlock() ITestBlockContext
+	AllElseIfBlock() []IElseIfBlockContext
+	ElseIfBlock(i int) IElseIfBlockContext
+	ElseBlock() IElseBlockContext
 
 	// IsTestBlockStatementContext differentiates from other interfaces.
 	IsTestBlockStatementContext()
@@ -2385,7 +2450,7 @@ func (p *DaedalusParser) TestBlockStatement() (localctx ITestBlockStatementConte
 	}
 	p.SetState(212)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 10, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 10, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -2397,7 +2462,7 @@ func (p *DaedalusParser) TestBlockStatement() (localctx ITestBlockStatementConte
 		}
 		p.SetState(214)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 10, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 10, p.GetParserRuleContext())
 	}
 	p.SetState(216)
 	p.GetErrorHandler().Sync(p)
@@ -2420,6 +2485,14 @@ type IFunctionDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Func() antlr.TerminalNode
+	NameNode() INameNodeContext
+	ParameterList() IParameterListContext
+	StatementBlock() IStatementBlockContext
+	TypeReference() ITypeReferenceContext
+	Event() antlr.TerminalNode
 
 	// IsFunctionDefContext differentiates from other interfaces.
 	IsFunctionDefContext()
@@ -2614,6 +2687,14 @@ type IConstDefContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Const() antlr.TerminalNode
+	TypeReference() ITypeReferenceContext
+	AllConstValueDef() []IConstValueDefContext
+	ConstValueDef(i int) IConstValueDefContext
+	AllConstArrayDef() []IConstArrayDefContext
+	ConstArrayDef(i int) IConstArrayDefContext
+
 	// IsConstDefContext differentiates from other interfaces.
 	IsConstDefContext()
 }
@@ -2802,7 +2883,7 @@ func (p *DaedalusParser) ConstDef() (localctx IConstDefContext) {
 	}
 	p.SetState(231)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 13, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 13, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(229)
@@ -2827,7 +2908,7 @@ func (p *DaedalusParser) ConstDef() (localctx IConstDefContext) {
 		}
 		p.SetState(236)
 		p.GetErrorHandler().Sync(p)
-		switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 14, p.GetParserRuleContext()) {
+		switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 14, p.GetParserRuleContext()) {
 		case 1:
 			{
 				p.SetState(234)
@@ -2856,6 +2937,16 @@ type IClassDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Class() antlr.TerminalNode
+	NameNode() INameNodeContext
+	LeftBrace() antlr.TerminalNode
+	RightBrace() antlr.TerminalNode
+	AllVarDecl() []IVarDeclContext
+	VarDecl(i int) IVarDeclContext
+	AllSemi() []antlr.TerminalNode
+	Semi(i int) antlr.TerminalNode
 
 	// IsClassDefContext differentiates from other interfaces.
 	IsClassDefContext()
@@ -3025,7 +3116,7 @@ func (p *DaedalusParser) ClassDef() (localctx IClassDefContext) {
 	}
 	p.SetState(251)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 16, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 16, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -3041,7 +3132,7 @@ func (p *DaedalusParser) ClassDef() (localctx IClassDefContext) {
 		}
 		p.SetState(253)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 16, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 16, p.GetParserRuleContext())
 	}
 	{
 		p.SetState(254)
@@ -3057,6 +3148,14 @@ type IPrototypeDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Prototype() antlr.TerminalNode
+	NameNode() INameNodeContext
+	LeftParen() antlr.TerminalNode
+	ParentReference() IParentReferenceContext
+	RightParen() antlr.TerminalNode
+	StatementBlock() IStatementBlockContext
 
 	// IsPrototypeDefContext differentiates from other interfaces.
 	IsPrototypeDefContext()
@@ -3228,6 +3327,14 @@ type IInstanceDefContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Instance() antlr.TerminalNode
+	NameNode() INameNodeContext
+	LeftParen() antlr.TerminalNode
+	ParentReference() IParentReferenceContext
+	RightParen() antlr.TerminalNode
+	StatementBlock() IStatementBlockContext
+
 	// IsInstanceDefContext differentiates from other interfaces.
 	IsInstanceDefContext()
 }
@@ -3398,6 +3505,14 @@ type IInstanceDeclContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Instance() antlr.TerminalNode
+	AllNameNode() []INameNodeContext
+	NameNode(i int) INameNodeContext
+	LeftParen() antlr.TerminalNode
+	ParentReference() IParentReferenceContext
+	RightParen() antlr.TerminalNode
+
 	// IsInstanceDeclContext differentiates from other interfaces.
 	IsInstanceDeclContext()
 }
@@ -3554,7 +3669,7 @@ func (p *DaedalusParser) InstanceDecl() (localctx IInstanceDeclContext) {
 	}
 	p.SetState(276)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 17, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 17, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -3570,7 +3685,7 @@ func (p *DaedalusParser) InstanceDecl() (localctx IInstanceDeclContext) {
 		}
 		p.SetState(278)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 17, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 17, p.GetParserRuleContext())
 	}
 	{
 		p.SetState(279)
@@ -3594,6 +3709,14 @@ type INamespaceDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Namespace() antlr.TerminalNode
+	NameNode() INameNodeContext
+	LeftBrace() antlr.TerminalNode
+	RightBrace() antlr.TerminalNode
+	AllContentBlock() []IContentBlockContext
+	ContentBlock(i int) IContentBlockContext
 
 	// IsNamespaceDefContext differentiates from other interfaces.
 	IsNamespaceDefContext()
@@ -3755,7 +3878,7 @@ func (p *DaedalusParser) NamespaceDef() (localctx INamespaceDefContext) {
 	}
 	p.SetState(289)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 18, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 18, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -3767,7 +3890,7 @@ func (p *DaedalusParser) NamespaceDef() (localctx INamespaceDefContext) {
 		}
 		p.SetState(291)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 18, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 18, p.GetParserRuleContext())
 	}
 	{
 		p.SetState(292)
@@ -3783,6 +3906,11 @@ type IMainBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	ZParserExtenderMetaBlock() IZParserExtenderMetaBlockContext
+	AllContentBlock() []IContentBlockContext
+	ContentBlock(i int) IContentBlockContext
 
 	// IsMainBlockContext differentiates from other interfaces.
 	IsMainBlockContext()
@@ -3932,7 +4060,7 @@ func (p *DaedalusParser) MainBlock() (localctx IMainBlockContext) {
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
-	for ok := true; ok; ok = (int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&2160320512) != 0 {
+	for ok := true; ok; ok = ((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&2160320512) != 0) {
 		{
 			p.SetState(297)
 			p.ContentBlock()
@@ -3952,6 +4080,11 @@ type IContentBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	BlockDef() IBlockDefContext
+	InlineDef() IInlineDefContext
+	MacroDef() IMacroDefContext
 
 	// IsContentBlockContext differentiates from other interfaces.
 	IsContentBlockContext()
@@ -4078,7 +4211,7 @@ func (p *DaedalusParser) ContentBlock() (localctx IContentBlockContext) {
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(305)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 21, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 21, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(302)
@@ -4108,6 +4241,16 @@ type IVarDeclContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Var() antlr.TerminalNode
+	TypeReference() ITypeReferenceContext
+	AllVarValueDecl() []IVarValueDeclContext
+	VarValueDecl(i int) IVarValueDeclContext
+	AllVarArrayDecl() []IVarArrayDeclContext
+	VarArrayDecl(i int) IVarArrayDeclContext
+	AllVarDecl() []IVarDeclContext
+	VarDecl(i int) IVarDeclContext
 
 	// IsVarDeclContext differentiates from other interfaces.
 	IsVarDeclContext()
@@ -4339,7 +4482,7 @@ func (p *DaedalusParser) VarDecl() (localctx IVarDeclContext) {
 	}
 	p.SetState(311)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 22, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 22, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(309)
@@ -4355,7 +4498,7 @@ func (p *DaedalusParser) VarDecl() (localctx IVarDeclContext) {
 	}
 	p.SetState(321)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 24, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 24, p.GetParserRuleContext())
 
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
@@ -4365,7 +4508,7 @@ func (p *DaedalusParser) VarDecl() (localctx IVarDeclContext) {
 			}
 			p.SetState(317)
 			p.GetErrorHandler().Sync(p)
-			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 23, p.GetParserRuleContext()) {
+			switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 23, p.GetParserRuleContext()) {
 			case 1:
 				{
 					p.SetState(314)
@@ -4389,7 +4532,7 @@ func (p *DaedalusParser) VarDecl() (localctx IVarDeclContext) {
 		}
 		p.SetState(323)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 24, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 24, p.GetParserRuleContext())
 	}
 
 	return localctx
@@ -4401,7 +4544,6 @@ type IMetaValueContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsMetaValueContext differentiates from other interfaces.
 	IsMetaValueContext()
 }
@@ -4493,7 +4635,7 @@ func (p *DaedalusParser) MetaValue() (localctx IMetaValueContext) {
 
 		p.SetState(327)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 25, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 25, p.GetParserRuleContext())
 	}
 
 	return localctx
@@ -4505,6 +4647,12 @@ type IZParserExtenderMetaContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	Assign() antlr.TerminalNode
+	MetaValue() IMetaValueContext
+	Semi() antlr.TerminalNode
 
 	// IsZParserExtenderMetaContext differentiates from other interfaces.
 	IsZParserExtenderMetaContext()
@@ -4647,6 +4795,14 @@ type IZParserExtenderMetaBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Meta() antlr.TerminalNode
+	LeftBrace() antlr.TerminalNode
+	RightBrace() antlr.TerminalNode
+	Semi() antlr.TerminalNode
+	AllZParserExtenderMeta() []IZParserExtenderMetaContext
+	ZParserExtenderMeta(i int) IZParserExtenderMetaContext
 
 	// IsZParserExtenderMetaBlockContext differentiates from other interfaces.
 	IsZParserExtenderMetaBlockContext()
@@ -4792,7 +4948,7 @@ func (p *DaedalusParser) ZParserExtenderMetaBlock() (localctx IZParserExtenderMe
 	}
 	p.SetState(339)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 26, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 26, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -4804,7 +4960,7 @@ func (p *DaedalusParser) ZParserExtenderMetaBlock() (localctx IZParserExtenderMe
 		}
 		p.SetState(341)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 26, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 26, p.GetParserRuleContext())
 	}
 	{
 		p.SetState(342)
@@ -4824,6 +4980,13 @@ type IConstArrayDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	LeftBracket() antlr.TerminalNode
+	ArraySize() IArraySizeContext
+	RightBracket() antlr.TerminalNode
+	ConstArrayAssignment() IConstArrayAssignmentContext
 
 	// IsConstArrayDefContext differentiates from other interfaces.
 	IsConstArrayDefContext()
@@ -4987,6 +5150,13 @@ type IConstArrayAssignmentContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Assign() antlr.TerminalNode
+	LeftBrace() antlr.TerminalNode
+	RightBrace() antlr.TerminalNode
+	AllExpressionBlock() []IExpressionBlockContext
+	ExpressionBlock(i int) IExpressionBlockContext
+
 	// IsConstArrayAssignmentContext differentiates from other interfaces.
 	IsConstArrayAssignmentContext()
 }
@@ -5132,7 +5302,7 @@ func (p *DaedalusParser) ConstArrayAssignment() (localctx IConstArrayAssignmentC
 	}
 	p.SetState(358)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 27, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 27, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -5148,7 +5318,7 @@ func (p *DaedalusParser) ConstArrayAssignment() (localctx IConstArrayAssignmentC
 		}
 		p.SetState(360)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 27, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 27, p.GetParserRuleContext())
 	}
 
 	{
@@ -5165,6 +5335,10 @@ type IConstValueDefContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	ConstValueAssignment() IConstValueAssignmentContext
 
 	// IsConstValueDefContext differentiates from other interfaces.
 	IsConstValueDefContext()
@@ -5292,6 +5466,10 @@ type IConstValueAssignmentContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Assign() antlr.TerminalNode
+	ExpressionBlock() IExpressionBlockContext
+
 	// IsConstValueAssignmentContext differentiates from other interfaces.
 	IsConstValueAssignmentContext()
 }
@@ -5405,6 +5583,12 @@ type IVarArrayDeclContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	LeftBracket() antlr.TerminalNode
+	ArraySize() IArraySizeContext
+	RightBracket() antlr.TerminalNode
 
 	// IsVarArrayDeclContext differentiates from other interfaces.
 	IsVarArrayDeclContext()
@@ -5548,6 +5732,9 @@ type IVarValueDeclContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	NameNode() INameNodeContext
+
 	// IsVarValueDeclContext differentiates from other interfaces.
 	IsVarValueDeclContext()
 }
@@ -5653,7 +5840,6 @@ type IVariadicContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsVariadicContext differentiates from other interfaces.
 	IsVariadicContext()
 }
@@ -5742,6 +5928,13 @@ type IParameterListContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	LeftParen() antlr.TerminalNode
+	RightParen() antlr.TerminalNode
+	AllParameterDecl() []IParameterDeclContext
+	ParameterDecl(i int) IParameterDeclContext
+	Variadic() IVariadicContext
 
 	// IsParameterListContext differentiates from other interfaces.
 	IsParameterListContext()
@@ -5901,7 +6094,7 @@ func (p *DaedalusParser) ParameterList() (localctx IParameterListContext) {
 		}
 		p.SetState(384)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 28, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 28, p.GetParserRuleContext())
 
 		for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 			if _alt == 1+1 {
@@ -5917,7 +6110,7 @@ func (p *DaedalusParser) ParameterList() (localctx IParameterListContext) {
 			}
 			p.SetState(386)
 			p.GetErrorHandler().Sync(p)
-			_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 28, p.GetParserRuleContext())
+			_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 28, p.GetParserRuleContext())
 		}
 
 	}
@@ -5950,6 +6143,14 @@ type IParameterDeclContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Var() antlr.TerminalNode
+	TypeReference() ITypeReferenceContext
+	NameNode() INameNodeContext
+	LeftBracket() antlr.TerminalNode
+	ArraySize() IArraySizeContext
+	RightBracket() antlr.TerminalNode
 
 	// IsParameterDeclContext differentiates from other interfaces.
 	IsParameterDeclContext()
@@ -6128,6 +6329,18 @@ type IStatementBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	LeftBrace() antlr.TerminalNode
+	RightBrace() antlr.TerminalNode
+	AllMacroDef() []IMacroDefContext
+	MacroDef(i int) IMacroDefContext
+	AllStatement() []IStatementContext
+	Statement(i int) IStatementContext
+	AllSemi() []antlr.TerminalNode
+	Semi(i int) antlr.TerminalNode
+	AllIfBlockStatement() []IIfBlockStatementContext
+	IfBlockStatement(i int) IIfBlockStatementContext
 
 	// IsStatementBlockContext differentiates from other interfaces.
 	IsStatementBlockContext()
@@ -6352,7 +6565,7 @@ func (p *DaedalusParser) StatementBlock() (localctx IStatementBlockContext) {
 	}
 	p.SetState(415)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 34, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 34, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -6400,7 +6613,7 @@ func (p *DaedalusParser) StatementBlock() (localctx IStatementBlockContext) {
 		}
 		p.SetState(417)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 34, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 34, p.GetParserRuleContext())
 	}
 	{
 		p.SetState(418)
@@ -6416,6 +6629,15 @@ type IStatementContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Assignment() IAssignmentContext
+	ReturnStatement() IReturnStatementContext
+	ConstDef() IConstDefContext
+	VarDecl() IVarDeclContext
+	Expression() IExpressionContext
+	Continue() antlr.TerminalNode
+	Break() antlr.TerminalNode
 
 	// IsStatementContext differentiates from other interfaces.
 	IsStatementContext()
@@ -6581,7 +6803,7 @@ func (p *DaedalusParser) Statement() (localctx IStatementContext) {
 
 	p.SetState(427)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 35, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 35, p.GetParserRuleContext()) {
 	case 1:
 		p.EnterOuterAlt(localctx, 1)
 		{
@@ -6642,6 +6864,13 @@ type IFuncCallContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	LeftParen() antlr.TerminalNode
+	RightParen() antlr.TerminalNode
+	AllFuncArgExpression() []IFuncArgExpressionContext
+	FuncArgExpression(i int) IFuncArgExpressionContext
 
 	// IsFuncCallContext differentiates from other interfaces.
 	IsFuncCallContext()
@@ -6805,7 +7034,7 @@ func (p *DaedalusParser) FuncCall() (localctx IFuncCallContext) {
 		}
 		p.SetState(436)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 36, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 36, p.GetParserRuleContext())
 
 		for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 			if _alt == 1+1 {
@@ -6821,7 +7050,7 @@ func (p *DaedalusParser) FuncCall() (localctx IFuncCallContext) {
 			}
 			p.SetState(438)
 			p.GetErrorHandler().Sync(p)
-			_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 36, p.GetParserRuleContext())
+			_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 36, p.GetParserRuleContext())
 		}
 
 	}
@@ -6839,6 +7068,11 @@ type IAssignmentContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Reference() IReferenceContext
+	AssignmentOperator() IAssignmentOperatorContext
+	ExpressionBlock() IExpressionBlockContext
 
 	// IsAssignmentContext differentiates from other interfaces.
 	IsAssignmentContext()
@@ -6986,6 +7220,9 @@ type IIfConditionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ExpressionBlock() IExpressionBlockContext
+
 	// IsIfConditionContext differentiates from other interfaces.
 	IsIfConditionContext()
 }
@@ -7091,6 +7328,10 @@ type IElseBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Else() antlr.TerminalNode
+	StatementBlock() IStatementBlockContext
 
 	// IsElseBlockContext differentiates from other interfaces.
 	IsElseBlockContext()
@@ -7205,6 +7446,12 @@ type IElseIfBlockContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Else() antlr.TerminalNode
+	If() antlr.TerminalNode
+	IfCondition() IIfConditionContext
+	StatementBlock() IStatementBlockContext
 
 	// IsElseIfBlockContext differentiates from other interfaces.
 	IsElseIfBlockContext()
@@ -7348,6 +7595,11 @@ type IIfBlockContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	If() antlr.TerminalNode
+	IfCondition() IIfConditionContext
+	StatementBlock() IStatementBlockContext
+
 	// IsIfBlockContext differentiates from other interfaces.
 	IsIfBlockContext()
 }
@@ -7481,6 +7733,12 @@ type IIfBlockStatementContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	IfBlock() IIfBlockContext
+	AllElseIfBlock() []IElseIfBlockContext
+	ElseIfBlock(i int) IElseIfBlockContext
+	ElseBlock() IElseBlockContext
 
 	// IsIfBlockStatementContext differentiates from other interfaces.
 	IsIfBlockStatementContext()
@@ -7639,7 +7897,7 @@ func (p *DaedalusParser) IfBlockStatement() (localctx IIfBlockStatementContext) 
 	}
 	p.SetState(465)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 38, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 38, p.GetParserRuleContext())
 
 	for _alt != 1 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1+1 {
@@ -7651,7 +7909,7 @@ func (p *DaedalusParser) IfBlockStatement() (localctx IIfBlockStatementContext) 
 		}
 		p.SetState(467)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 38, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 38, p.GetParserRuleContext())
 	}
 	p.SetState(469)
 	p.GetErrorHandler().Sync(p)
@@ -7674,6 +7932,10 @@ type IReturnStatementContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Return() antlr.TerminalNode
+	ExpressionBlock() IExpressionBlockContext
 
 	// IsReturnStatementContext differentiates from other interfaces.
 	IsReturnStatementContext()
@@ -7797,6 +8059,9 @@ type IFuncArgExpressionContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	ExpressionBlock() IExpressionBlockContext
+
 	// IsFuncArgExpressionContext differentiates from other interfaces.
 	IsFuncArgExpressionContext()
 }
@@ -7903,6 +8168,9 @@ type IExpressionBlockContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Expression() IExpressionContext
+
 	// IsExpressionBlockContext differentiates from other interfaces.
 	IsExpressionBlockContext()
 }
@@ -8008,7 +8276,6 @@ type IExpressionContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsExpressionContext differentiates from other interfaces.
 	IsExpressionContext()
 }
@@ -9082,7 +9349,7 @@ func (p *DaedalusParser) expression(_p int) (localctx IExpressionContext) {
 	p.GetParserRuleContext().SetStop(p.GetTokenStream().LT(-1))
 	p.SetState(528)
 	p.GetErrorHandler().Sync(p)
-	_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 43, p.GetParserRuleContext())
+	_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 43, p.GetParserRuleContext())
 
 	for _alt != 2 && _alt != antlr.ATNInvalidAltNumber {
 		if _alt == 1 {
@@ -9092,7 +9359,7 @@ func (p *DaedalusParser) expression(_p int) (localctx IExpressionContext) {
 			_prevctx = localctx
 			p.SetState(526)
 			p.GetErrorHandler().Sync(p)
-			switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 42, p.GetParserRuleContext()) {
+			switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 42, p.GetParserRuleContext()) {
 			case 1:
 				localctx = NewMultExpressionContext(p, NewExpressionContext(p, _parentctx, _parentState))
 				p.PushNewRecursionContext(localctx, _startState, DaedalusParserRULE_expression)
@@ -9251,7 +9518,7 @@ func (p *DaedalusParser) expression(_p int) (localctx IExpressionContext) {
 		}
 		p.SetState(530)
 		p.GetErrorHandler().Sync(p)
-		_alt = p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 43, p.GetParserRuleContext())
+		_alt = p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 43, p.GetParserRuleContext())
 	}
 
 	return localctx
@@ -9263,6 +9530,10 @@ type IArrayIndexContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	IntegerLiteral() antlr.TerminalNode
+	ReferenceAtom() IReferenceAtomContext
 
 	// IsArrayIndexContext differentiates from other interfaces.
 	IsArrayIndexContext()
@@ -9390,6 +9661,10 @@ type IArraySizeContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	IntegerLiteral() antlr.TerminalNode
+	ReferenceAtom() IReferenceAtomContext
+
 	// IsArraySizeContext differentiates from other interfaces.
 	IsArraySizeContext()
 }
@@ -9515,7 +9790,6 @@ type IValueContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsValueContext differentiates from other interfaces.
 	IsValueContext()
 }
@@ -9812,7 +10086,7 @@ func (p *DaedalusParser) Value() (localctx IValueContext) {
 
 	p.SetState(545)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 46, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 46, p.GetParserRuleContext()) {
 	case 1:
 		localctx = NewIntegerLiteralValueContext(p, localctx)
 		p.EnterOuterAlt(localctx, 1)
@@ -9872,6 +10146,12 @@ type IReferenceAtomContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	NameNode() INameNodeContext
+	LeftBracket() antlr.TerminalNode
+	ArrayIndex() IArrayIndexContext
+	RightBracket() antlr.TerminalNode
 
 	// IsReferenceAtomContext differentiates from other interfaces.
 	IsReferenceAtomContext()
@@ -9995,7 +10275,7 @@ func (p *DaedalusParser) ReferenceAtom() (localctx IReferenceAtomContext) {
 	p.SetState(552)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 47, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 47, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(548)
 			p.Match(DaedalusParserLeftBracket)
@@ -10020,6 +10300,11 @@ type IReferenceContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	AllReferenceAtom() []IReferenceAtomContext
+	ReferenceAtom(i int) IReferenceAtomContext
+	Dot() antlr.TerminalNode
 
 	// IsReferenceContext differentiates from other interfaces.
 	IsReferenceContext()
@@ -10148,7 +10433,7 @@ func (p *DaedalusParser) Reference() (localctx IReferenceContext) {
 	p.SetState(557)
 	p.GetErrorHandler().Sync(p)
 
-	if p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 48, p.GetParserRuleContext()) == 1 {
+	if p.GetInterpreter().AdaptivePredict(p.BaseParser,p.GetTokenStream(), 48, p.GetParserRuleContext()) == 1 {
 		{
 			p.SetState(555)
 			p.Match(DaedalusParserDot)
@@ -10169,6 +10454,15 @@ type ITypeReferenceContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+	Void() antlr.TerminalNode
+	Int() antlr.TerminalNode
+	Float() antlr.TerminalNode
+	StringKeyword() antlr.TerminalNode
+	Func() antlr.TerminalNode
+	Instance() antlr.TerminalNode
 
 	// IsTypeReferenceContext differentiates from other interfaces.
 	IsTypeReferenceContext()
@@ -10295,6 +10589,21 @@ type IAnyIdentifierContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Void() antlr.TerminalNode
+	Var() antlr.TerminalNode
+	Int() antlr.TerminalNode
+	Float() antlr.TerminalNode
+	StringKeyword() antlr.TerminalNode
+	Func() antlr.TerminalNode
+	Instance() antlr.TerminalNode
+	Class() antlr.TerminalNode
+	Prototype() antlr.TerminalNode
+	Null() antlr.TerminalNode
+	Meta() antlr.TerminalNode
+	Namespace() antlr.TerminalNode
+	Identifier() antlr.TerminalNode
 
 	// IsAnyIdentifierContext differentiates from other interfaces.
 	IsAnyIdentifierContext()
@@ -10446,6 +10755,9 @@ type INameNodeContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	AnyIdentifier() IAnyIdentifierContext
+
 	// IsNameNodeContext differentiates from other interfaces.
 	IsNameNodeContext()
 }
@@ -10552,6 +10864,9 @@ type IParentReferenceContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Identifier() antlr.TerminalNode
+
 	// IsParentReferenceContext differentiates from other interfaces.
 	IsParentReferenceContext()
 }
@@ -10645,6 +10960,15 @@ type IAssignmentOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Assign() antlr.TerminalNode
+	StarAssign() antlr.TerminalNode
+	DivAssign() antlr.TerminalNode
+	PlusAssign() antlr.TerminalNode
+	MinusAssign() antlr.TerminalNode
+	AndAssign() antlr.TerminalNode
+	OrAssign() antlr.TerminalNode
 
 	// IsAssignmentOperatorContext differentiates from other interfaces.
 	IsAssignmentOperatorContext()
@@ -10772,6 +11096,12 @@ type IUnaryOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Plus() antlr.TerminalNode
+	Tilde() antlr.TerminalNode
+	Minus() antlr.TerminalNode
+	Not() antlr.TerminalNode
+
 	// IsUnaryOperatorContext differentiates from other interfaces.
 	IsUnaryOperatorContext()
 }
@@ -10886,6 +11216,10 @@ type IAddOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Plus() antlr.TerminalNode
+	Minus() antlr.TerminalNode
+
 	// IsAddOperatorContext differentiates from other interfaces.
 	IsAddOperatorContext()
 }
@@ -10991,7 +11325,6 @@ type IBitMoveOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsBitMoveOperatorContext differentiates from other interfaces.
 	IsBitMoveOperatorContext()
 }
@@ -11088,6 +11421,10 @@ type ICompOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Less() antlr.TerminalNode
+	Greater() antlr.TerminalNode
 
 	// IsCompOperatorContext differentiates from other interfaces.
 	IsCompOperatorContext()
@@ -11194,7 +11531,6 @@ type IEqOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
-
 	// IsEqOperatorContext differentiates from other interfaces.
 	IsEqOperatorContext()
 }
@@ -11291,6 +11627,10 @@ type IMultOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Star() antlr.TerminalNode
+	Div() antlr.TerminalNode
 
 	// IsMultOperatorContext differentiates from other interfaces.
 	IsMultOperatorContext()
@@ -11398,6 +11738,9 @@ type IBinAndOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	BitAnd() antlr.TerminalNode
+
 	// IsBinAndOperatorContext differentiates from other interfaces.
 	IsBinAndOperatorContext()
 }
@@ -11491,6 +11834,9 @@ type IBinOrOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	BitOr() antlr.TerminalNode
 
 	// IsBinOrOperatorContext differentiates from other interfaces.
 	IsBinOrOperatorContext()
@@ -11586,6 +11932,9 @@ type ILogAndOperatorContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	And() antlr.TerminalNode
+
 	// IsLogAndOperatorContext differentiates from other interfaces.
 	IsLogAndOperatorContext()
 }
@@ -11679,6 +12028,9 @@ type ILogOrOperatorContext interface {
 
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
+
+	// Getter signatures
+	Or() antlr.TerminalNode
 
 	// IsLogOrOperatorContext differentiates from other interfaces.
 	IsLogOrOperatorContext()

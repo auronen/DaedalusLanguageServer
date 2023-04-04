@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	dls "github.com/kirides/DaedalusLanguageServer"
@@ -57,7 +58,7 @@ var encodings = map[string]encoding.Encoding{
 	"WINDOWS-1256": charmap.Windows1256,
 	"WINDOWS-1257": charmap.Windows1257,
 	"WINDOWS-1258": charmap.Windows1258,
-	"UTF8"        : unicode.UTF8,
+	"UTF8":         unicode.UTF8,
 }
 
 func (m *parseResultsManager) SetFileEncoding(enc string) error {
@@ -398,82 +399,17 @@ func (m *parseResultsManager) getConcurrency() int {
 	return numWorkers
 }
 
-func (m *parseResultsManager) validateFiles(ctx context.Context, resolvedPaths []string) map[string][]SyntaxError {
-	results := make(map[string][]SyntaxError)
-
-	chanPaths := make(chan string, len(resolvedPaths))
-	for _, r := range resolvedPaths {
-		chanPaths <- r
+func timeOp(op string, logger dls.Logger) func() {
+	start := time.Now()
+	return func() {
+		end := time.Now()
+		diff := end.Sub(start)
+		if diff > time.Second*5 {
+			logger.Infof("%s took %.2fs", op, diff.Seconds())
+		} else {
+			logger.Infof("%s took %dms", op, diff.Milliseconds())
+		}
 	}
-	close(chanPaths)
-
-	var wg sync.WaitGroup
-
-	numWorkers := m.getConcurrency()
-
-	wg.Add(numWorkers)
-	for i := 0; i < numWorkers; i++ {
-		go func(wg *sync.WaitGroup) {
-			defer wg.Done()
-
-			buf := bufferPool.Get().(*bytes.Buffer)
-			defer bufferPool.Put(buf)
-
-			decoder := m.decoderPool.Get().(*encoding.Decoder)
-			defer m.decoderPool.Put(decoder)
-
-			for r := range chanPaths {
-				if ctx.Err() != nil {
-					return
-				}
-				f, err := os.Open(r)
-				if err != nil {
-					continue
-				}
-				decoder.Reset()
-				translated := decoder.Reader(f)
-				buf.Reset()
-				_, err = buf.ReadFrom(translated)
-				f.Close()
-				if err != nil {
-					continue
-				}
-
-				parsed := m.ValidateScript(r, buf.String())
-				if len(parsed) > 0 {
-					m.mtx.Lock()
-					results[r] = parsed
-					m.mtx.Unlock()
-				}
-			}
-		}(&wg)
-	}
-
-	wg.Wait()
-	return results
-}
-
-func (m *parseResultsManager) validateFile(dPath string) ([]SyntaxError, error) {
-	buf := bufferPool.Get().(*bytes.Buffer)
-	defer bufferPool.Put(buf)
-
-	decoder := m.decoderPool.Get().(*encoding.Decoder)
-	defer m.decoderPool.Put(decoder)
-
-	f, err := os.Open(dPath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	decoder.Reset()
-	translated := decoder.Reader(f)
-	buf.Reset()
-	_, err = buf.ReadFrom(translated)
-	if err != nil {
-		return nil, err
-	}
-	return m.ValidateScript(dPath, buf.String()), nil
 }
 
 func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string, ws *LspWorkspace) ([]*ParseResult, error) {
@@ -482,6 +418,7 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string, w
 		return nil, err
 	}
 	m.logger.Infof("Parsing %q. This might take a while.", srcFile)
+	defer timeOp(fmt.Sprintf("Parsing %q", srcFile), m.logger)()
 
 	results := make([]*ParseResult, 0, len(resolvedPaths))
 
@@ -539,13 +476,33 @@ func (m *parseResultsManager) ParseSource(ctx context.Context, srcFile string, w
 
 	wg.Wait()
 
-	validations := m.validateFiles(ctx, resolvedPaths)
+	wg.Add(numWorkers)
+	var nextResult atomic.Int32
+	nextResult.Swap(0)
+	total := int32(len(results))
 
-	for _, v := range results {
-		if e, ok := validations[v.Source]; ok {
-			v.SyntaxErrors = append(v.SyntaxErrors, e...)
-		}
+	for i := 0; i < numWorkers; i++ {
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			for {
+				next := nextResult.Add(1)
+				if next > total {
+					return
+				}
+				parsed := results[next-1]
+				ast := parsed.Ast
+				// For now, Ast = nil means we already analyzed the file.
+				// keeping the Ast in memory uses a whole bunch of memory.
+				if ast != nil {
+					errors := m.ValidateAst(parsed.Source, ast)
+					parsed.Ast = nil
+					parsed.SyntaxErrors = errors
+				}
+			}
+		}(&wg)
 	}
+
+	wg.Wait()
 
 	m.logger.Infof("Done parsing %q: %d scripts.", srcFile, len(results))
 	return results, nil
@@ -577,16 +534,18 @@ func (m *parseResultsManager) ParseFile(dFile string) (*ParseResult, error) {
 	}
 
 	parsed := m.ParseScript(dFile, buf.String(), stat.ModTime(), nil)
+	// For now, Ast = nil means we already analyzed the file.
+	// keeping the Ast in memory uses a whole bunch of memory.
+	if parsed.Ast != nil {
+		errors := m.ValidateAst(parsed.Source, parsed.Ast)
+		parsed.Ast = nil
+		parsed.SyntaxErrors = errors
+	}
 
 	m.mtx.Lock()
 	m.parseResults[parsed.Source] = parsed
 	m.mtx.Unlock()
 
-	validations, err := m.validateFile(parsed.Source)
-
-	if err == nil && len(validations) > 0 {
-		parsed.SyntaxErrors = append(parsed.SyntaxErrors, validations...)
-	}
 	return parsed, nil
 }
 

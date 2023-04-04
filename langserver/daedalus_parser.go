@@ -15,11 +15,11 @@ type DaedalusGrammarParser interface {
 	SetInputStream(antlr.TokenStream)
 	GetInterpreter() *antlr.ParserATNSimulator
 
-	NewDaedalusFile() antlr.Tree
+	NewDaedalusFile() parser.IDaedalusFileContext
 }
 
 type Parser interface {
-	Parse(source, content string, listener antlr.ParseTreeListener, errListener antlr.ErrorListener)
+	Parse(source, content string, listener antlr.ParseTreeListener, errListener antlr.ErrorListener) parser.IDaedalusFileContext
 }
 
 type parserPool struct {
@@ -31,12 +31,20 @@ func newParserPool(newFn func() DaedalusGrammarParser) *parserPool {
 		inner: sync.Pool{New: func() interface{} { return newFn() }},
 	}
 }
-func (p *parserPool) Get() DaedalusGrammarParser {
-	return p.inner.Get().(DaedalusGrammarParser)
+func (p *parserPool) Get() DaedalusGrammarParser  { return p.inner.Get().(DaedalusGrammarParser) }
+func (p *parserPool) Put(v DaedalusGrammarParser) { p.inner.Put(v) }
+
+type lexerPool struct {
+	inner sync.Pool
 }
-func (p *parserPool) Put(v DaedalusGrammarParser) {
-	p.inner.Put(v)
+
+func newLexerPool(newFn func() *parser.DaedalusLexer) *lexerPool {
+	return &lexerPool{
+		inner: sync.Pool{New: func() interface{} { return newFn() }},
+	}
 }
+func (p *lexerPool) Get() *parser.DaedalusLexer  { return p.inner.Get().(*parser.DaedalusLexer) }
+func (p *lexerPool) Put(v *parser.DaedalusLexer) { p.inner.Put(v) }
 
 // ParseAndValidateScript ...
 func (m *parseResultsManager) ParseAndValidateScript(source, content string, conf translationConfiguration) *ParseResult {
@@ -48,68 +56,67 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string, con
 	m.ParseScriptListener(source, content, combineListeners(combineListeners(stateful, validating), translating), errListener)
 
 	result := &ParseResult{
-		SyntaxErrors:    errListener.SyntaxErrors,
-		GlobalVariables: stateful.Globals.Variables,
-		GlobalConstants: stateful.Globals.Constants,
-		Functions:       stateful.Globals.Functions,
-		Classes:         stateful.Globals.Classes,
-		Prototypes:      stateful.Globals.Prototypes,
-		Instances:       stateful.Globals.Instances,
-		Namespaces:      stateful.Namespaces,
-		Source:          source,
-		StringLocations: translating.StringLocations,
+		SyntaxErrors:     errListener.SyntaxErrors,
+		GlobalVariables:  stateful.Globals.Variables,
+		GlobalConstants:  stateful.Globals.Constants,
+		Functions:        stateful.Globals.Functions,
+		Classes:          stateful.Globals.Classes,
+		Prototypes:       stateful.Globals.Prototypes,
+		Instances:        stateful.Globals.Instances,
+		Namespaces:       stateful.Namespaces,
+		Source:           source,
+		StringLocations:  translating.StringLocations,
 		UnresolvedString: translating.UnresolvedStrings,
-		lastModifiedAt:  time.Now(),
+		lastModifiedAt:   time.Now(),
 
 		logs: translating.logs,
 	}
 	return result
 }
 
-
 // ParseScriptListener ...
-func (m *parseResultsManager) ParseScriptListener(source, content string, listener parser.DaedalusListener, errListener antlr.ErrorListener) {
-	m.parser.Parse(source, content, listener, errListener)
+func (m *parseResultsManager) ParseScriptListener(source, content string, listener parser.DaedalusListener, errListener antlr.ErrorListener) parser.IDaedalusFileContext {
+	return m.parser.Parse(source, content, listener, errListener)
 }
 
 // ParseScript ...
 func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt time.Time, ws *LspWorkspace) *ParseResult {
-	m.mtx.Lock()
-	if existing, ok := m.parseResults[source]; ok && existing.lastModifiedAt == lastModifiedAt {
-		m.mtx.Unlock()
+	m.mtx.RLock()
+	if existing, ok := m.parseResults[source]; ok && existing.lastModifiedAt.Equal(lastModifiedAt) {
+		m.mtx.RUnlock()
 		return existing
 	}
-	m.mtx.Unlock()
+	m.mtx.RUnlock()
 
 	listener := NewDaedalusStatefulListener(source, m)
 	translating := NewDaedalusTranslatingListener(source, m, initTranslationConfig(ws))
 	errListener := &SyntaxErrorListener{}
 
-	m.ParseScriptListener(source, content, combineListeners(translating, listener), errListener)
+	daedalusFile := m.ParseScriptListener(source, content, combineListeners(translating, listener), errListener)
 
 	result := &ParseResult{
-		SyntaxErrors:    errListener.SyntaxErrors,
-		GlobalVariables: listener.Globals.Variables,
-		GlobalConstants: listener.Globals.Constants,
-		Functions:       listener.Globals.Functions,
-		Classes:         listener.Globals.Classes,
-		Prototypes:      listener.Globals.Prototypes,
-		Instances:       listener.Globals.Instances,
-		Namespaces:      listener.Namespaces,
-		StringLocations: translating.StringLocations,
+		Ast:              daedalusFile,
+		SyntaxErrors:     errListener.SyntaxErrors,
+		GlobalVariables:  listener.Globals.Variables,
+		GlobalConstants:  listener.Globals.Constants,
+		Functions:        listener.Globals.Functions,
+		Classes:          listener.Globals.Classes,
+		Prototypes:       listener.Globals.Prototypes,
+		Instances:        listener.Globals.Instances,
+		Namespaces:       listener.Namespaces,
+		StringLocations:  translating.StringLocations,
 		UnresolvedString: translating.UnresolvedStrings,
-		Source:          source,
-		lastModifiedAt:  lastModifiedAt,
-		logs: translating.logs,
+		Source:           source,
+		lastModifiedAt:   lastModifiedAt,
+		logs:             translating.logs,
 	}
 	return result
 }
 
-// ValidateScript ...
-func (m *parseResultsManager) ValidateScript(source, content string) []SyntaxError {
+func (m *parseResultsManager) ValidateAst(source string, ast parser.IDaedalusFileContext) []SyntaxError {
 	listener := NewDaedalusValidatingListener(source, m)
 	errListener := &SyntaxErrorListener{}
-	m.ParseScriptListener(source, content, listener, errListener)
+	antlr.NewParseTreeWalker().Walk(listener, ast)
 
 	return errListener.SyntaxErrors
 }
