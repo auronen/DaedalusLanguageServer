@@ -24,6 +24,7 @@ import (
 )
 
 type parseResultsManager struct {
+	ws           *LspWorkspace
 	parseResults map[string]*ParseResult
 	mtx          sync.RWMutex
 	logger       dls.Logger
@@ -36,8 +37,9 @@ type parseResultsManager struct {
 	NumParserThreads int
 }
 
-func newParseResultsManager(logger dls.Logger) *parseResultsManager {
+func newParseResultsManager(logger dls.Logger, ws *LspWorkspace) *parseResultsManager {
 	return &parseResultsManager{
+		ws:               ws,
 		parseResults:     make(map[string]*ParseResult),
 		logger:           logger,
 		fileEncoding:     charmap.Windows1252,

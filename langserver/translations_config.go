@@ -66,8 +66,10 @@ func initTranslationConfigWithPath(path string) translationConfiguration {
 	var conf translationConfiguration
 	targetDir := filepath.Join(path, ".dls", "translations.json")
 	err := readConf(targetDir, &conf)
+
+    fmt.Fprintf(os.Stderr, "tr config: %v", conf)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "There was an error reading the translation config: %v", err)
+    fmt.Fprintf(os.Stderr, "There was an error reading the translation config: %v", err)
 		return translationConfiguration{}
 	}
 	return conf

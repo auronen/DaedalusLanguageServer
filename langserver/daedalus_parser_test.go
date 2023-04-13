@@ -33,7 +33,7 @@ func TestParseSingleScript(t *testing.T) {
 		dmg = 1;
 	};`
 
-	m := newParseResultsManager(nopLogger{})
+	m := newParseResultsManager(nopLogger{}, nil)
 	result := m.ParseScript("C:\\temp", script, time.Now(), nil)
 	if _, ok := result.Functions[strings.ToUpper("InitDamage")]; !ok {
 		t.Fail()
@@ -54,7 +54,7 @@ func TestZParserExtender(t *testing.T) {
 	};
 	`
 
-	m := newParseResultsManager(nopLogger{})
+	m := newParseResultsManager(nopLogger{}, nil)
 	result := m.ParseScript("C:\\temp", script, time.Now(), nil)
 	if _, ok := result.Namespaces[strings.ToUpper("zPE")].Functions[strings.ToUpper("InitDamage")]; !ok {
 		for _, v := range result.SyntaxErrors {
@@ -69,7 +69,7 @@ func TestParseSingleScriptFromFile(t *testing.T) {
 	fileBody, _ := os.ReadFile(src)
 	script, _ := charmap.Windows1252.NewDecoder().Bytes(fileBody)
 
-	m := newParseResultsManager(nopLogger{})
+	m := newParseResultsManager(nopLogger{}, nil)
 	result := m.ParseScript(src, string(script), time.Now(), nil)
 	if _, ok := result.Functions[strings.ToUpper("Do")]; !ok {
 		t.Fail()
@@ -77,7 +77,7 @@ func TestParseSingleScriptFromFile(t *testing.T) {
 }
 
 func TestGothicSrc(t *testing.T) {
-	m := newParseResultsManager(nopLogger{})
+	m := newParseResultsManager(nopLogger{}, nil)
 	m.NumParserThreads = 8
 	result, err := m.ParseSource(context.TODO(), filepath.Join("testdata", "Gothic.src"), nil)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestGothicSrc(t *testing.T) {
 func BenchmarkGothicSrc(b *testing.B) {
 	b.Logf("Running %d iterations", b.N)
 	for i := 0; i < b.N; i++ {
-		m := newParseResultsManager(nopLogger{})
+		m := newParseResultsManager(nopLogger{}, nil)
 		m.NumParserThreads = 1
 		_, err := m.ParseSource(context.TODO(), filepath.Join("testdata", "Gothic.src"), nil)
 		if err != nil {

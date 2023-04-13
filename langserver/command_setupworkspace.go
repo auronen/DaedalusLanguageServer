@@ -51,7 +51,7 @@ func (h *LspWorkspace) commandSetupWorkspace(ws *LspWorkspace, argStr string) er
 	}
 
 	targetDir := filepath.Join(ws.path, ".dls", "externals")
-	err := os.MkdirAll(targetDir, os.ModePerm /*0640*/)
+	err := os.MkdirAll(targetDir, 0644)
 	if err != nil && !os.IsExist(err) {
 		h.logger.Errorf("Error creating directory %q. %v", targetDir, err)
 		return nil
@@ -87,7 +87,7 @@ func (h *LspWorkspace) commandSetupWorkspace(ws *LspWorkspace, argStr string) er
 	})
 
 	targetDir = filepath.Join(ws.path, ".dls", "zPE")
-	err = os.MkdirAll(targetDir, os.ModePerm /*0640*/)
+	err = os.MkdirAll(targetDir, 0644)
 	if err != nil && !os.IsExist(err) {
 		h.logger.Errorf("Error creating directory %q. %v", targetDir, err)
 		return nil

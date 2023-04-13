@@ -51,7 +51,7 @@ func (m *parseResultsManager) ParseAndValidateScript(source, content string, con
 	stateful := NewDaedalusStatefulListener(source, m)
 	validating := NewDaedalusValidatingListener(source, m)
 
-	translating := NewDaedalusTranslatingListener(source, m, conf)
+	translating := NewDaedalusTranslatingListener(source, m, m.ws.translationConfig)
 	errListener := &SyntaxErrorListener{}
 	m.ParseScriptListener(source, content, combineListeners(combineListeners(stateful, validating), translating), errListener)
 
@@ -89,7 +89,7 @@ func (m *parseResultsManager) ParseScript(source, content string, lastModifiedAt
 	m.mtx.RUnlock()
 
 	listener := NewDaedalusStatefulListener(source, m)
-	translating := NewDaedalusTranslatingListener(source, m, initTranslationConfig(ws))
+	translating := NewDaedalusTranslatingListener(source, m, m.ws.translationConfig)
 	errListener := &SyntaxErrorListener{}
 
 	daedalusFile := m.ParseScriptListener(source, content, combineListeners(translating, listener), errListener)

@@ -29,23 +29,31 @@ const (
 
 func (ws *LspWorkspace) assignWorkspaceID(path string) {
 	switch {
-    case strings.Contains(strings.ToLower(path), CAMERA):
-		ws.wsID = CAMERA
-    case strings.Contains(strings.ToLower(path), FIGHT):
-		ws.wsID = FIGHT
-    case strings.Contains(strings.ToLower(path), GOTHIC):
-		ws.wsID = GOTHIC
-    case strings.Contains(strings.ToLower(path), MENU):
-		ws.wsID = MENU
-    case strings.Contains(strings.ToLower(path), MUSIC):
-		ws.wsID = MUSIC
-    case strings.Contains(strings.ToLower(path), PARTICLEFX):
-		ws.wsID = PARTICLEFX
-    case strings.Contains(strings.ToLower(path), SFX):
-		ws.wsID = SFX
-    case strings.Contains(strings.ToLower(path), VISUALFX):
-		ws.wsID = VISUALFX
+    case strings.Contains(strings.ToLower(path), "content"):
+		ws.wsID = "content"
+		break
+    case strings.Contains(strings.ToLower(path), "system"):
+		ws.wsID = "system"
+		break
 	}
+	// switch {
+    // case strings.Contains(strings.ToLower(path), CAMERA):
+	// 	ws.wsID = CAMERA
+    // case strings.Contains(strings.ToLower(path), FIGHT):
+	// 	ws.wsID = FIGHT
+    // case strings.Contains(strings.ToLower(path), GOTHIC):
+	// 	ws.wsID = GOTHIC
+    // case strings.Contains(strings.ToLower(path), MENU):
+	// 	ws.wsID = MENU
+    // case strings.Contains(strings.ToLower(path), MUSIC):
+	// 	ws.wsID = MUSIC
+    // case strings.Contains(strings.ToLower(path), PARTICLEFX):
+	// 	ws.wsID = PARTICLEFX
+    // case strings.Contains(strings.ToLower(path), SFX):
+	// 	ws.wsID = SFX
+    // case strings.Contains(strings.ToLower(path), VISUALFX):
+	// 	ws.wsID = VISUALFX
+	// }
 }
 
 type LspWorkspace struct {
@@ -65,6 +73,10 @@ type LspWorkspace struct {
 
 	workspaceCtx       context.Context
 	cancelWorkspaceCtx context.CancelFunc
+}
+
+func (ws *LspWorkspace) addParseResultManager(logger dls.Logger) {
+	ws.parsedDocuments = newParseResultsManager(logger, ws)
 }
 
 // TODO: We need to figure out a better way to handle workspaces.

@@ -417,43 +417,28 @@ func (h *LspHandler) generateAllsimpleCSV() {
 
 // Generates one giant escaped csv file with all translatable strings
 func (h *LspHandler) generateAllCSV() {
-	var what string
-	var ws_key string
-	for key, val := range h.workspaces {
-		h.logger.Infof("key: %#v,\n\n val %#v\n\n", key, val.wsID)
-		if val.wsID == GOTHIC {
-			what = val.wsID
-			ws_key = key
-		} else if val.wsID == MENU {
-			what = val.wsID
-			ws_key = key
-		} else {
-			what = val.wsID
-			ws_key = key
-		}
-	}
+	for _, ws := range h.workspaces {
+		h.logger.Infof("Generating: %s", ws.wsID)
+		entries := make([]CSVentry, 0, 2000)
 
-	h.logger.Infof("Generating %s", what)
-
-	entries := make([]CSVentry, 0, 200)
-
-	for _, res := range h.workspaces[ws_key].parsedDocuments.parseResults {
-		for content, pos_array := range res.StringLocations {
-			if len(pos_array) > 0 {
-				entries = append(entries, newCSVentryFromStringLocation(content, pos_array[0]))
+		for _, res := range ws.parsedDocuments.parseResults {
+			for content, pos_array := range res.StringLocations {
+				if len(pos_array) > 0 {
+					entries = append(entries, newCSVentryFromStringLocation(content, pos_array[0]))
+				}
 			}
 		}
+
+		h.logger.Infof("Got %d lines", len(entries))
+
+		// Sort entries by file and then by line (ensures comfortable translations)
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].path != entries[j].path {
+				return entries[i].path < entries[j].path
+			}
+			return entries[i].lineNumber < entries[j].lineNumber
+		})
+
+		csvWrite(entries, ws.wsID, "translations")
 	}
-
-	h.logger.Infof("Got %d lines", len(entries))
-
-	// Sort entries by file and then by line (ensures comfortable translations)
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].path != entries[j].path {
-			return entries[i].path < entries[j].path
-		}
-		return entries[i].lineNumber < entries[j].lineNumber
-	})
-
-	csvWrite(entries, what, "translations")
 }
